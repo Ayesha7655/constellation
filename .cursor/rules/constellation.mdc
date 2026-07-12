@@ -1,0 +1,827 @@
+---
+description: Constellation monorepo conventions — frontend theming, UI polish, Nest + sequelize-typescript backend patterns, and project structure
+alwaysApply: true
+---
+
+# Constellation — Cursor Rules
+
+## Monorepo
+
+- **Package scope:** `@constellation/*` (`packages/shared`)
+- **Frontend:** `apps/frontend` — Next.js 16, TypeScript, Tailwind CSS v4
+- **Backend:** `apps/backend` — NestJS, sequelize-typescript, class-validator
+- Run both apps: `pnpm dev` from repo root
+- Default ports: frontend `4000`, backend `4050` (env-configurable)
+- Run `pnpm typecheck` before commits/CI — strict TypeScript on both apps
+- **v1 scope:** auth, organizations, RBAC shell — no domain modules (listings, inspections, etc.). Design spec: `docs/superpowers/specs/2026-07-11-constellation-v1-design.md`
+- **Caching (v1):** DB-only for auth/RBAC — **no Redis** in v1; `PermissionsService` lives in `apps/backend/src/database/` and reads grants from Postgres directly
+- **v1 simplification:** no multi-role switch (`POST /auth/switch-role`), no `@RequireActiveRole`, no Redis/cache layers — delete dead Robot24 code instead of carrying it forward
+
+## Database module (required)
+
+All database infrastructure lives under **`apps/backend/src/database/`** — not scattered across `common/` or feature modules.
+
+| Piece | Location |
+|-------|----------|
+| **Module** | `database/database.module.ts` — `SequelizeModule.forRoot` + `forFeature`, exports `SequelizeModule` + `PermissionsService` |
+| **Models** | `database/models/` |
+| **Enums** | `database/enums.ts` |
+| **Migrations** | `database/migrations/` + `database/migrate.ts` / `database/reset-database.ts` |
+| **RBAC reads** | `database/permissions.service.ts` |
+| **Attribute lists** | `database/attributes.ts` — canonical `attributes` arrays per model/use-case |
+
+Feature modules (`auth`, `users`, `admin`, …) import **`DatabaseModule`** and inject models via **`@InjectModel`**. Do **not** add parallel DB modules or move `PermissionsService` back to `common/`.
+
+### Explicit `attributes` on every read (required)
+
+Every Sequelize **read** (`findOne`, `findAll`, `findByPk`, `findAndCountAll`, and nested `include` associations) must pass a **non-empty** `attributes` array — never rely on default full-row selects.
+
+- Define/reuse lists in **`database/attributes.ts`** (e.g. `USER_PROFILE_ATTRS`, `ROLE_KEY_ATTRS`) and spread into queries: `attributes: [...USER_PROFILE_ATTRS]`
+- **Includes** need explicit `attributes` on each associated model too
+- **`count`** queries do not need `attributes`; **writes** (`create`, `update`, `destroy`) are unchanged
+- Add a new constant when a query needs a different column set — do not omit `attributes` because “we need everything”
+
+## TypeScript safety
+
+Both apps extend shared strict settings from `tsconfig.base.json` at the repo root. Do not weaken compiler options locally without a deliberate reason.
+
+### Shared strict options (`tsconfig.base.json`)
+
+- `strict: true` — full strict mode (not a partial subset)
+- `noUncheckedIndexedAccess` — index access may be `undefined`; narrow or guard before use
+- `noImplicitReturns` — all code paths must return
+- `noUnusedLocals` / `noUnusedParameters` — no dead variables
+- `noFallthroughCasesInSwitch` — switches must break/return
+
+### Typecheck pipeline
+
+```bash
+pnpm typecheck          # turbo: runs both apps
+pnpm --filter frontend typecheck
+pnpm --filter backend typecheck
+```
+
+- **Frontend:** `tsc --noEmit` (config: `apps/frontend/tsconfig.json`)
+- **Backend:** `tsc --noEmit` (config: `apps/backend/tsconfig.json`, includes `src/`)
+
+Run `pnpm typecheck` after TypeScript changes and before opening PRs. Wire this into CI alongside `build` and `lint`.
+
+### Frontend rules
+
+- **No `any`** — use `unknown` and narrow, or define proper types/interfaces
+- **No `@ts-ignore` / `@ts-expect-error`** unless unavoidable; add a one-line comment explaining why
+- **No non-null assertions (`!`)** unless the value is guaranteed (prefer guards)
+- **API responses:** define types in `apps/frontend/src/types/` and use them in API clients
+- **Components:** type props with explicit interfaces/types; type server component data at boundaries (fetch results, params)
+- **Registry / maps:** with `noUncheckedIndexedAccess`, lookups return `T | undefined` — guard or throw (see `getTweakcnTheme`)
+- **Env:** use `process.env.NEXT_PUBLIC_*` directly; do not wrap in extra config layers
+- **`.env.example`:** when adding a new `NEXT_PUBLIC_*` var, add it to `apps/frontend/.env.example` in the same change with a short comment (see **Environment variables** in General)
+- **Imports:** use `@/*` path alias for `src/` modules
+- **Icons:** use **`lucide-react`** for UI icons (`import { Eye, EyeOff } from 'lucide-react'`). Size with `className` (e.g. `size-4`, `size-[18px]`); set `aria-hidden` on decorative icons. Do not add inline `<svg>` icon components for generic UI — exception: brand/mark assets (e.g. `GoogleIcon`) where Lucide has no suitable official mark.
+- **i18n:** use **`next-intl`** without locale segments in URLs. All i18n code lives under `apps/frontend/src/i18n/` — `config.ts`, `request.ts`, `set-locale.ts`, `locale-change.ts`, `translate-user-message.ts`, and `messages/{locale}.json`. Locales `en` (default) and `ar`; active locale from the `locale` cookie (fallback `NEXT_PUBLIC_DEFAULT_LOCALE`). Pages live directly under `app/` — **no** `app/[locale]/` folder or next-intl middleware. Auth/API/Firebase errors mapped via `i18n/translate-user-message.ts`. Zod schemas via factories in `lib/validation/`. **Backend API calls:** send `x-locale` on every request via `getApiLocaleHeaders()` / `getServerApiLocale()` in `lib/api-locale.ts` (`auth-api.ts`, `lib/api.ts`). **Keep localization infrastructure in place** (messages files, cookie locale, RTL utilities, `LocaleSwitcher` component, backend `x-locale` / JSONB resolution) — do not remove i18n wiring when adding UI. **Locale switcher is hidden by default** — `LocaleSwitcher` returns `null` unless `NEXT_PUBLIC_LOCALE_SWITCHER_ENABLED=true` (document in `apps/frontend/.env.example`). **Treat `messages/en.json` as the authoring source of truth** for new copy (see **Arabic message sync** below).
+- **Arabic message sync (required):** whenever you add or change user-facing keys in `apps/frontend/src/i18n/messages/en.json`, add matching keys with Arabic translations in `apps/frontend/src/i18n/messages/ar.json` in the **same PR/change** — same nesting path, no missing keys. Do not ship UI that references new `t('…')` keys with `en.json` only; raw key paths (e.g. `dashboard.admin.listings.detail.openFullPage`) in Arabic mode mean `ar.json` is out of date. Backend-resolved DB copy (JSONB) still uses migration SQL or write DTOs `{ "en": "…", "ar": "…" }` — this rule is for frontend message files only.
+- **Locale-sensitive API refetch (client):** client components that show backend-resolved localized strings (JSONB via `x-locale` — e.g. country names, role labels) **must refetch when the language changes**, not only on mount. Use **`useLocaleRefetch`** from `@/hooks/use-locale-refetch`; pass explicit **`AppLocale`** into API client functions. `LocaleSwitcher` calls **`dispatchLocaleChange()`** from `@/i18n/locale-change` after the cookie is set and before `router.refresh()`; the hook refetches immediately on that event and again when **`useLocale()`** updates. Guard stale responses with **`isCancelled()`** from the hook callback context. Examples: `countries-view.tsx`, `roles-and-permissions-view.tsx`.
+- **RTL (Arabic):** root layout sets `dir="rtl"` when locale is `ar`. Use **logical** Tailwind utilities for direction (`text-start` / `text-end`, `ms-*` / `me-*`, `ps-*` / `pe-*`, `start-*` / `end-*`) — **never** physical `left-*`, `right-*`, `ml-*`, `mr-*`, `pl-*`, `pr-*`, `text-left`, or `text-right` in components. Field inline errors anchor to `end-*`; password toggles use `end-*` + input `pe-*`; secondary actions (e.g. forgot password) use `text-end`.
+- **Client-only UI:** use `useIsClient()` from `@/hooks/use-is-client` instead of `useEffect` + `setState` to detect hydration
+- **Inline handlers (client components):** JSX props (`onSubmit`, `onClick`, `onSuccess`, Formik children, `useEffect`, hook option objects) must be **one line** at the call site — e.g. `onSubmit={handleSubmit}`, `onClick={onSignOutClick}`, `{renderForm}`. If the handler needs more than a single expression, define it in the same component (or hook) with `useCallback` and pass the stable reference. Do not embed multi-line arrow/async bodies inline in JSX or hook literals.
+- **`useCallback` formatting:** keep the callback signature on the **same line** as `useCallback(` — e.g. `useCallback(async (values) => {`, `useCallback(({ isSubmitting }) => (`, not `useCallback(` on one line and `async (` / `(` on the next. Dependency arrays may wrap on following lines if needed.
+
+### Forms (required)
+
+- Use **Formik** for form state and **Zod** for schemas (`zod-formik-adapter` → `toFormikValidationSchema`)
+- Schemas live in `apps/frontend/src/lib/validation/` — **short, precise** messages only (e.g. `Invalid email`, `Email required`). Use `form-fields.ts` helpers (`requiredEmail`, `requiredText`, …) so Formik `undefined` is coerced before `z.string()` — never show Zod’s default type errors (`expected string, received undefined`)
+- Reuse shared UI: `FormField` + `FieldInlineError`, `FormikTextField`, `FormikTextareaField`, `FormikRichTextEditorField`, `FormikDropdownField`, `FormGrid` + `FormGridFullWidth`, `form-banner`, `form-divider`, `button`, `Checkbox`, `Dropdown`, `FormActions`
+- **Form layout (required):** use **`FormGrid`** from `@constellation/shared/ui` for dialog and page forms — **two columns per row** by default (`grid-cols-1 sm:grid-cols-2`). Wrap fields that must span the full width in **`FormGridFullWidth`** (`sm:col-span-2`). **Exceptions (full width only):** rich text / HTML editors (`FormikRichTextEditorField`, `RichTextEditor`) and **textareas** (`FormikTextareaField`). Regular text inputs, dropdowns, date/time pickers, and checkboxes sit in the 2-column grid unless a design explicitly calls for another layout.
+- **Action buttons (required):** place save/submit/primary actions on the **inline-end** (right in LTR) — use logical utilities (`justify-end`, `items-end`, `text-end`), **not** physical `right-*` / `text-right`. Applies everywhere actions appear:
+  - **Forms and dialogs:** `FormActions className="justify-end"` — cancel/back **first** in DOM (start), primary/submit/destructive confirm **last** (end). Use `FormActions` from `@constellation/shared/ui`.
+  - **Page / panel headers:** `AdminPageLayout` `actions`, `SidePanel` `headerActions`, list filter bars — `flex … justify-end` (refresh, add, adjust grouped at end).
+  - **Cards and summary rows:** metadata/start, primary CTA/end — e.g. package price + **Buy** on one row with `justify-between` (button at end).
+  - **Inline error + retry:** message full width; retry/submit button aligned to `items-end`.
+  - Exception: designs that explicitly call for another layout.
+- Do **not** add per-field error UX elsewhere: no right-side tooltips, no hover-only errors, no `!` icons, no `pinError`, no duplicate field-error components
+- **Field errors** (Zod + any `touched && error`): `FieldInlineError` — opaque muted danger alert (`bg-background`, `text-destructive`, soft border; no translucent fills over the input edge). Anchored to **inline-end** (`end-*`); overlaps bottom border slightly. Always visible when invalid, not on hover
+- Inputs: **no** `shadow-sm`; border + focus ring only
+- **API / Firebase outcomes (success and failure):** use **toasts** — see **Operation feedback (toasts)** below. Do **not** rely on **`FormBanner`** alone for completed submits (save, delete, revoke, password change, etc.).
+- **`FormBanner`:** optional for **persistent inline context** on a page (e.g. auth info state after redirect) — not the primary feedback channel for API results.
+- Handle all user-visible outcomes: validation errors, auth errors, email verification required, loading/disabled submit, Google cancel
+- **Formik:** `onSubmit={handleSubmit}` and children `{renderForm}` — both `handleSubmit` and `renderForm` are `useCallback` in the component; submit logic stays in `handleSubmit`, field markup in `renderForm`
+- **Dialog / modal forms (required):** every dialog with editable fields must **reset all form state when the dialog closes** — cancel, backdrop click, Escape, and successful submit. Wire reset in a single **`onDialogOpenChange`** handler: when `next === false`, clear controlled state (and revert pending uploads if any); block close while `isSaving` / `pending`. Do **not** rely on reset-on-open only; cancel buttons must route through the same handler (or call the same reset helper). Success paths may also reset explicitly after close. Reference: `decide-inspection-dialog.tsx`, `schedule-inspection-dialog.tsx`.
+
+#### Strong validation (required)
+
+Every **editable** form or dialog — pages, wizards, admin CRUD dialogs, inspection/certified-stock modals — must validate through **Formik + Zod**. Do **not** ship new flows with `useState` field values and hand-rolled `if (!value)` checks as the primary validation layer.
+
+| Layer | Location / pattern |
+|-------|---------------------|
+| **Schema file** | `apps/frontend/src/lib/validation/<feature>-schemas.ts` — export **`createXSchema(messages)`** factory + **`XValues`** type. One file per feature/domain (`inspection-schemas.ts`, `certified-stock-schemas.ts`, `auth-schemas.ts`, …). |
+| **Messages** | Factory accepts a **readonly messages object** with localized strings from **`useTranslations`** — never hardcode English in schemas. Add every new validation key to **`messages/en.json` and `messages/ar.json` in the same PR** (short, precise copy: `Email required`, `Select an outcome`). |
+| **Adapter** | `useMemo(() => toFormikValidationSchema(createXSchema({ … })), [t])` — wire via Formik **`validationSchema`**. |
+| **Scalar helpers** | `form-fields.ts` — **`requiredText`**, **`requiredEmail`**, **`requiredPassword`** (`z.preprocess` so Formik `undefined` never surfaces Zod type errors). |
+| **Rich text helpers** | `rich-text-fields.ts` — **`requiredRichText`**, **`optionalRichText`** using **`isRichTextEmpty`** / **`isRichTextOverMaxLength`**; caps from **`@constellation/shared`** (`INSPECTION_NOTE_MAX_LENGTH`, `INSPECTION_REPORT_BODY_MAX_LENGTH`, `ROBOT_LISTING_DESCRIPTION_MAX_LENGTH`). Match backend **`@MaxLength`**. |
+| **Formik fields** | **`FormikTextField`**, **`FormikTextareaField`**, **`FormikRichTextEditorField`**, **`FormikDropdownField`** (`components/form/formik-dropdown-field.tsx`). One-off inputs (e.g. `datetime-local`): **`useField`** + **`FormField`** + shared **`inputClassName`**. |
+| **Submit** | Primary action: **`type="submit"`** + **`form={formId}`**; Formik **`onSubmit={handleSubmit}`** (`useCallback`). Disable submit for **`isSubmitting`** / upload-in-progress / empty option lists only — **not** as a substitute for Zod (no `disabled={isRichTextEmpty(…)}` when the schema already requires the field). |
+| **Outcomes** | Field failures → **`FieldInlineError`** (never toast). API/Firebase success and failure → **toasts** (see **Operation feedback**). |
+
+**Dialog wiring checklist:**
+
+1. **`if (!open) return null`** — mount Formik only while open (avoids stale state).
+2. **`const emptyValues`** + **`const formId = useId()`** at module/component scope.
+3. **`onDialogOpenChange(next, resetForm, isSubmitting)`** — block close while saving; **`resetForm()`** when `next === false`; revert orphan uploads in the same handler when applicable.
+4. **`handleSubmit`** — `setSubmitting` in `finally`; **`resetForm()`** + close on success; map optional rich text to `undefined` on the API payload with **`isRichTextEmpty`**, not `.trim()` on HTML.
+5. Cancel / backdrop / Escape route through **`onDialogOpenChange`**, not a separate reset path.
+
+**Validation rules by field type:**
+
+- **Required text / textarea** — `requiredText` or `z.preprocess` + `.trim().min(1)` + `.max(n)` when capped.
+- **Required dropdown / partner** — `requiredText` on the selected value; placeholder option value `''` must fail schema.
+- **Enum outcome (PASS/FAIL, etc.)** — `z.preprocess` + `.min(1)` + `.refine` to allowed literals.
+- **Required rich text** — `requiredRichText(emptyMessage, maxLength, maxMessage)`; pass matching **`maxLength`** + **`maxLengthMessage`** on **`FormikRichTextEditorField`**.
+- **Optional rich text** — `optionalRichText(maxLength, maxMessage)` only (empty HTML allowed).
+- **Datetime** — required non-empty string, parseable `Date`, and future-time rule when product requires it (see `createScheduleInspectionSchema`).
+- **Files / uploads** — may stay in component **`useState`** (keys, previews); still validate all typed inputs through Formik + Zod. Revert orphans on dialog close and submit failure.
+
+**Exceptions (no Formik):** confirmation-only dialogs with **no editable fields** (e.g. certify/fail confirm). Every dialog with inputs, dropdowns, textareas, or rich-text editors **must** use Formik + Zod.
+
+**References:** `decide-inspection-dialog.tsx`, `approve-certified-stock-dialog.tsx`, `reject-certified-stock-dialog.tsx`, `assign-inspector-dialog.tsx`, `assign-partner-dialog.tsx`, `book-standalone-inspection-dialog.tsx`, `submit-report-dialog.tsx`, `schedule-inspection-dialog.tsx`, `sign-in-form.tsx`, `profile-settings-form.tsx`.
+
+**Edge cases (do not repeat):**
+
+| Pitfall | Correct approach |
+|---------|------------------|
+| Native `<form>` with Formik | Use Formik **`<Form>`** — native submit without `preventDefault` reloads the page and appends query params to the URL. |
+| Shared **`Button`** in toolbars / table actions | Pass **`fullWidth={false}`** — default is `w-full`, which stacks icon + label vertically in tight layouts. |
+| **`table-fixed`** preview columns | Set **`cellClassName: 'max-w-0'`** on the column and **`truncate`** on inner text — otherwise long copy blows out the layout and pushes actions off-screen. |
+| Sticky row actions in scrollable tables | Pin the actions column with **`sticky end-0`** + opaque **`bg-card`** on header/cells so horizontal scroll keeps actions visible. |
+| Popover / datetime panels near viewport edge | Support **`placement: 'auto' \| 'below' \| 'above'`** — measure trigger + panel height; flip above when insufficient space below (`DateTimePicker` in `@constellation/shared/ui`). |
+| System banner strip | Mount **`SystemBannersHost`** in root **`layout.tsx`** before page `{children}` — **not** inside `ViewportShell` / `DashboardShell` after headers. Strip is normal document flow (`shrink-0`); do not absolute-position over the topbar. |
+| Admin-only surfaces | Consumer announcements (system banners) **must not render** on admin routes — gate by pathname prefix (`DASHBOARD_BASE_PATH.admin`). |
+
+### Rich text fields (required)
+
+Stored values are **HTML strings** from Tiptap (Markdown paste is converted on input). Any field authored with **`RichTextEditor`** / **`FormikRichTextEditorField`** must be **read** through the shared display stack — never as raw text, never with `dangerouslySetInnerHTML` in feature code, and never stripped with **`richTextToPlainText`** for user-facing detail/preview UI.
+
+**Fields in scope today:** listing **`description`**; inspection standalone **`note`**; admin decision **`reviewNotes`** / **`decisionNotes`**; partner report **`body`**; deal-room / timeline **`message`** when it may contain editor HTML. Apply the same rules when adding new rich-text-backed columns.
+
+| Layer | Location / pattern |
+|-------|---------------------|
+| **Authoring** | **`RichTextEditor`** (`@constellation/shared/ui`) — legacy/local-state only when not yet on Formik; **`FormikRichTextEditorField`** — **required** for Formik forms and dialogs. Pass **`maxLength`** + **`maxLengthMessage`** matching backend `@MaxLength`. Enforce empty/required and max length in **Zod** via **`requiredRichText`** / **`optionalRichText`** — not submit-button `disabled` alone. |
+| **Empty / length helpers** | **`isRichTextEmpty`**, **`isRichTextOverMaxLength`**, **`looksLikeRichTextHtml`** from `@constellation/shared`; caps **`INSPECTION_NOTE_MAX_LENGTH`** (2000), **`INSPECTION_REPORT_BODY_MAX_LENGTH`** (5000), **`ROBOT_LISTING_DESCRIPTION_MAX_LENGTH`** from `@constellation/shared`. Use **`isRichTextEmpty`** on submit payloads — not `.trim()` on HTML. |
+| **Core renderer** | **`RichTextContent`** (`@constellation/shared/ui`) — low-level HTML display via **`prepareRichTextHtmlForDisplay`**. Do **not** import in feature views unless building a new shared wrapper. |
+| **Detail / general display** | **`RichTextDisplayBody`**, **`RichTextDisplaySection`**, **`RichTextMessageContent`** from `@constellation/shared/ui`. Use **`RichTextMessageContent`** when stored data may be **legacy plain text or HTML** (reports, deal-room notes/messages). Use **`RichTextDisplaySection`** for labeled blocks; **`RichTextDisplayBody`** when the label is custom. |
+| **Listing description only** | **`ListingDescriptionSection`**, **`ListingDescriptionPreviewRow`**, **`ListingDescriptionBody`** from `@constellation/shared/ui` — admin/seller/partner/buyer detail, **public marketplace detail** (`marketplace-detail-view.tsx`), side panels, and form wizard previews (same bordered body as other rich text; use **`bodyClassName`** when the section sits inside an existing card shell). |
+| **Paste / markdown (editor only)** | **`normalizePastedHtml`**, **`looksLikeMarkdown`**, **`insertMarkdownIntoEditor`** — editor/paste pipeline only; not for read paths. |
+
+**Do not:** render `{description}` / `{report.body}` in a plain `<p>`; use **`whitespace-pre-line`** on HTML; show raw tags; use **`ReadOnlyField`** or comma-separated text for rich content; duplicate display styling in feature components.
+
+**References:** `listing-details-content.tsx`, `marketplace-detail-view.tsx`, `seller-listing-form-preview.tsx`, `admin-inspection-detail-view.tsx`, `deal-room-details-content.tsx`, `book-standalone-inspection-dialog.tsx`, `submit-report-dialog.tsx`.
+
+### Backend rules
+
+- **No `any`** — same as frontend; use sequelize-typescript model classes and inferred attribute types where applicable
+- **Env:** inject `ConfigService` and read **flat env var names** — `configService.get<string>('JWT_SECRET')`, `configService.getOrThrow<string>('DATABASE_URL')`. Do **not** add `src/config/` registerAs layers or nested keys like `auth.jwtSecret`
+- **`.env.example`:** when introducing a new env var read via `ConfigService`, add it to `apps/backend/.env.example` in the same change with a short comment (see **Environment variables** in General)
+- **DTOs:** every request body/query DTO must use `class-validator` decorators; types are enforced at runtime via `ValidationPipe` and at compile time via the class definition
+- **Sequelize:** models live under `apps/backend/src/database/models/` (sequelize-typescript `@Table` / `@Column` / associations). Register models via `DatabaseModule` (`SequelizeModule.forRoot` / `forFeature`). Inject with `@InjectModel(ModelClass)`. Configure `DATABASE_URL` through `ConfigService`. **Every read query** uses explicit non-empty `attributes` from `database/attributes.ts` — see **Database module**. After model or migration changes, run migrations (`pnpm db:migrate`) and `pnpm typecheck`
+- **Controllers (thin):** decorators + route wiring only — delegate to a service in one line (`return this.authService.authenticateWithFirebase(...)`). No validation, mapping, header checks, DB access, or HTTP exception throws in controllers. Put that in services (or small shared utils used by services).
+- **Services:** business logic, Sequelize/Firebase/JWT orchestration, `BadRequestException` / `UnauthorizedException` etc., response shaping. Export API result types from `modules/*/types/` when controllers need stable shapes.
+- **Permissions catalog:** `apps/backend/src/common/permissions/role-permissions.catalog.ts` — stable **role keys** for code lookups only; permission matrix and localized copy live in migration SQL. **Permission key strings** for code (`@RequirePermissions`, nav `permissionKey`, guards): import from `@constellation/shared` (`ADMIN`, `BROWSING`, … in `packages/shared/src/permission-keys.ts`) — never hardcode `'admin.foo'` literals in handlers or UI. **Adding permissions is additive** — assign **new unique** permission keys and `sort_order` values; never reuse or overwrite existing permission keys in migration SQL (see **Additive changes** and **Database & migrations**).
+- **Permission enforcement:** global **`PermissionsGuard`** (after **`JwtAuthGuard`**); opt in per handler/class with **`@RequirePermissions`** / **`@RequireAnyPermissions`**. Resolves grants from the JWT **`role`** claim (set at login/refresh) via **`PermissionsService`** in `database/`. Legacy tokens without **`role`** fall back to DB primary role. Missing permission metadata → pass through.
+
+### JWT active role & access control (v1)
+
+v1 uses a **single role per user** at login — no `POST /auth/switch-role`. The access token **`role`** claim is **`users.primary_role_key`** (also stored on the session row). **`@RequirePermissions`** checks grants for JWT **`role`** via **`PermissionsService`**.
+
+**Do not** add `@RequireActiveRole`, per-route role guards, or switch-role endpoints until multi-role switching is a product requirement.
+
+- **Redis caching (deferred in v1):** Constellation v1 uses **DB-only** auth/RBAC reads — do **not** add Redis or `CacheService` for permissions/sessions until explicitly requested. When Redis is added later: DB remains source of truth; never fail a request because Redis is down; follow the key/invalidation/TTL patterns from the reference fork.
+- **Indexing:** add indexes for lookup paths (FKs, filters, composite session device queries); performance matters. For composite indexes on long table/column names, follow **Index / unique constraint names** under **Database & migrations** — explicit short **`name`** on `@Index` / unique constraints in the model + the same name in migration `CREATE INDEX` SQL. References: `listing_activity_event_list_reset_stale_created_idx`, `expert_credit_ledger_purchase_type_key`, `expert_credit_ledger_reservation_type_key`.
+- **Default list sort:** when sort order is not specified (API, Sequelize query, or admin table), use **`created_at` descending** — newest first (`order: [['created_at', 'DESC']]`). **Exception:** admin catalogs with **`sort_order`** use `[['sort_order', 'ASC'], ['created_at', 'DESC']]` — see **Admin catalog CRUD**.
+
+### OpenAPI / Swagger (required — keep in sync)
+
+Follow [NestJS OpenAPI](https://docs.nestjs.com/openapi/introduction). Swagger UI: `http://localhost:4050/api/docs` (non-production only; see `src/swagger/setup-swagger.ts`). `persistAuthorization: true` keeps Authorize values (Bearer, `x-device-id`) across browser refresh.
+
+**Every new or changed HTTP endpoint** must update OpenAPI in the same PR — no undocumented routes.
+
+**Use composite decorators — do not stack raw `@Api*` on handlers.** Controllers document routes via helpers in `src/swagger/` (`api-controller.ts` for class-level, `api-routes.ts` for handlers, `api-responses.ts` for shared error primitives). Do **not** add new handlers with separate `@ApiOperation` + `@ApiJwtAuthErrors` + `@ApiForbiddenResponse` + `@ApiOkResponse` stacks; pick the matching route composite below. When no composite fits a new auth pattern, add one in `api-routes.ts` (compose from `api-responses.ts`) and use it everywhere that pattern appears.
+
+| Layer | Requirement |
+|--------|-------------|
+| Controller class | `ApiLocaleBearerController(tag)` for JWT + `x-locale`; `ApiPublicLocaleController(tag)` for public locale-aware APIs; `@ApiTags(tag)` only when neither applies (e.g. `auth`, `onboarding`) |
+| Protected admin handlers | `ApiProtectedAdminRoute({ summary, ok, validation?, notFound?, badRequest?, conflict? })` — JWT `401`, `PermissionsGuard` `403`, operation, success body; one `400` slot (validation + domain `badRequest` merge automatically) |
+| JWT user handlers | `ApiJwtProtectedRoute({ summary, ok, notFoundUser? })` |
+| Public handlers | `ApiPublicRoute`, `ApiPublicWriteRoute`, `ApiFirebaseLoginRoute`, `ApiOnboardingUploadRoute`, or `ApiDeviceBoundPublicRoute` from `api-routes.ts` |
+| Request body | `@ApiProperty` / `@ApiPropertyOptional` on the **same** class-validator DTO used by `@Body()` |
+| Path/query | `@ApiParam`, `@ApiQuery` when not obvious from route (keep per handler — not part of composites) |
+| Rare / domain errors | Low-level helpers in `api-responses.ts` (`ApiConflict`, `ApiBadRequest`, …) only inside a new composite or when a one-off route truly cannot use an existing composite |
+
+**Response schema classes:** Swagger needs runtime **classes** with `@ApiProperty` — not `type` / `interface` alone (they are erased). Place doc-only response models in `modules/<feature>/dto/*-response.dto.ts` (e.g. `auth-response.dto.ts`, `current-user-profile.dto.ts`). Service return types in `types/` can stay as `type` aliases; when the JSON shape changes, update the matching response DTO and the composite's `ok` option.
+
+**New global auth/header schemes:** add to `DocumentBuilder` in `setup-swagger.ts` first, then reference the scheme name in a route composite (or `@ApiSecurity` on the handler only when the scheme is route-specific).
+
+**Checklist before merge:** run backend locally → open `/api/docs` → confirm tag, operation, request schema, response schema, and auth/header buttons match the implementation.
+
+### Backend TypeScript pitfalls (documented fixes)
+
+- **`SessionPlatform` / enums:** import from shared constants or model enum definitions (`DataType.ENUM` / TS enums colocated with models); do not hand-write `'WEB' | 'ANDROID'` unions — use `SessionPlatform` and helpers like `getPlatformFromUserAgent`.
+- **JWT payload:** type as `JwtPayload` in `common/types/request.types.ts`; narrow `sub`, `sid`, `role`, and claims with guards before use — never assume `request.user` fields exist on protected routes without `requireAuthUserId`. For authorization, use JWT **`role`** (active session role) via **`resolveRequestActor`** / **`PermissionsGuard`** — not **`users.primary_role_key`** in services.
+- **Firebase ID token email:** top-level `decoded.email` may be missing for Google; use `emailFromFirebaseToken()` then `FirebaseService.resolveUserEmail()` — do not read email only from the client SDK `user.email`.
+- **Sequelize JSONB fields:** `permissions` and similar columns use `DataType.JSONB` — type API responses explicitly if exposing them; do not assign unvalidated `unknown` into strict interfaces without narrowing.
+- **Passport `handleRequest`:** use generic `handleRequest<TUser>(err, user: TUser | false): TUser` — do not leave implicit `any` on guard overrides.
+- **Transactional email HTML:** escape user-controlled strings (`applicantName`, reject reasons, etc.) with **`EmailTemplateService.escapeHtml()`** before interpolating into HTML — same rule as auth templates.
+- Run `pnpm typecheck` after backend edits; keep models and migrations in sync before opening PRs.
+
+### Formatting (Prettier)
+
+- **Root config:** `prettier.config.mjs` — `printWidth: 120` (not ESLint). When a line exceeds this width, Prettier wraps it (e.g. `export const x =` on one line and the string on the next). That is automatic formatting, not a hand-written style.
+- **Cannot disable** line wrapping globally in Prettier. Mitigations:
+  - Keep long Tailwind strings in a component via `cn(...)` instead of a top-level exported string constant
+  - Put `// prettier-ignore` on the line before a line that must stay on one row
+  - Avoid splitting short assignments manually; run `pnpm format` and accept Prettier’s result
+- **Backend:** `eslint-plugin-prettier` (`prettier/prettier` in `apps/backend/eslint.config.mjs`) reports Prettier violations as ESLint errors — fix with `pnpm format`, not by fighting the wrap
+- **Frontend:** no Prettier ESLint plugin; use `pnpm format` or editor “Format Document” (Prettier extension) so formatting matches the repo
+
+### Frontend TypeScript pitfalls (documented fixes)
+
+- **Zod 4 + Formik:** Formik may pass `undefined` for untouched fields — use `z.preprocess` in `lib/validation/form-fields.ts` (`requiredEmail`, `requiredText`) and `rich-text-fields.ts` (`requiredRichText`, `optionalRichText`) so users never see `expected string, received undefined`. New dialogs must use schema factories in `lib/validation/` — see **Forms → Strong validation**.
+- **`noUncheckedIndexedAccess`:** theme/registry lookups return `T | undefined` — guard or throw (see `getTweakcnTheme`).
+- **Formik inputs:** bind `value={field.value ?? ''}` so controlled inputs stay `string`.
+- **`react-hooks/set-state-in-effect`:** do not call synchronous `setState` inside `useEffect` to “sync” props/query into local state — ESLint flags this. Prefer **`useLocaleRefetch`** for locale-driven API reloads; **keyed child components** when local editor state must reset when a parent selection changes (e.g. `key={accountTypeKey:roleKey}`); derive with `useMemo` when the UI can read props directly. Async fetch-in-effect is fine with `isCancelled()` guards (see `useLocaleRefetch`).
+- Run `pnpm --filter frontend typecheck` after TS changes.
+
+## Pagination (required for growing lists)
+
+Use the shared pagination contract for any list endpoint or table that can grow beyond a small fixed set.
+
+### Contract (`@constellation/shared`)
+
+- Query: **`page`** (1-based, default `1`) and **`limit`** (items per page, default `20`, max `100` or `PAGINATION_MAX_LIMIT`).
+- Server computes **`offset = (page - 1) * limit`** for Sequelize `offset` / `limit`.
+- Response: **`{ items: [...], meta: { page, limit, total, totalPages } }`** — item key varies (`applications`, `countries`, etc.); **`meta`** shape is always the same (`PaginationMeta`).
+- Helpers: `resolvePagination`, `buildPaginationMeta`, `computeOffset`, `computeTotalPages` in `packages/shared/src/pagination.ts`.
+
+### Backend
+
+| Layer | Location / pattern |
+|-------|-------------------|
+| Shared types | `packages/shared/src/pagination.ts` — `PaginationMeta`, `resolvePagination`, `buildPaginationMeta`, `DEFAULT_PAGE_SIZE`, `MAX_PAGE_SIZE` |
+| Query DTO | Extend `PaginationQueryDto` from `src/common/dto/pagination-query.dto.ts`; add feature filters on a subclass (e.g. `ListTeamApplicationsQueryDto`). |
+| Response meta | `PaginationMetaDto` from `src/common/dto/pagination-meta.dto.ts` on list response DTOs. |
+| Service | Inject global **`PaginationService`** (`common/services/pagination.service.ts`) → `resolve()` + `findAndCountAll({ offset, limit, order: [['created_at', 'DESC']] })` (or parallel `count` + `findAll`) → `buildMeta()`. |
+| Controller | `@Query() query: XxxListQueryDto` — do not use loose `@Query('page')` / `@Query('limit')` on paginated routes. |
+| OpenAPI | Document paginated list responses with `meta` on the list response DTO class. |
+
+**Env:** `PAGINATION_MAX_LIMIT` (optional, default `100`) caps client `limit` in `PaginationService`.
+
+**Do not** return unbounded `findAll` for admin or public lists that can grow — add pagination in the same PR when the table is expected to scale.
+
+### Frontend
+
+| Layer | Location / pattern |
+|-------|-------------------|
+| Page size | `getDefaultPageSize()` from `@/lib/pagination` reads `NEXT_PUBLIC_DEFAULT_PAGE_SIZE` (default `20`); pass as API **`limit`** on every fetch. |
+| Types | Import `PaginationMeta` from `@/types/pagination` (re-exports shared); extend feature list response types with `meta`. |
+| UI | `Pagination` from `@constellation/shared/ui` below `DataTable` — parent owns `page` state, passes `meta`, `onPageChange`; reset **`page` to 1** when filters/tabs change. |
+| i18n | Previous/next labels and `pageOf` in feature message files. |
+| Table layout | **`fillViewport`** on `AdminPageLayout` + **`PaginatedTableLayout`** + **`scrollBody`** on `DataTable` — see **Viewport & page shells** and **Data tables**. |
+
+**Do not** embed fetch logic in `DataTable`, `Pagination`, or `PaginatedTableLayout` — views + API clients fetch; components stay presentational.
+
+**Reference:** `team-applications-view.tsx` (paginated list end-to-end), `ListTeamApplicationsQueryDto`, `TeamApplicationsService.listApplications`.
+
+## Viewport & page shells (required)
+
+Lock the app to the viewport; scroll only where content is meant to scroll.
+
+### Outer shells (`overflow-hidden`, `h-dvh max-h-dvh`)
+
+| Shell | Location | Pattern |
+|-------|----------|---------|
+| Root | `app/layout.tsx` | `body`: `h-full overflow-hidden flex flex-col` |
+| Dashboard | `DashboardShell` | Full viewport flex row; sidebar nav scrolls independently (`overflow-y-auto` inside aside) |
+| Public / auth | `ViewportShell` | Header `shrink-0`; main `flex-1 min-h-0 overflow-y-auto` |
+
+Dashboard header (`DashboardHeader`) is **`shrink-0`**. Dashboard main wraps children in an inner **`overflow-y-auto`** region — **normal pages scroll here**.
+
+### Dashboard breadcrumbs (required — admin & seller)
+
+Every **admin** and **seller** dashboard page must show accurate header breadcrumbs (`DashboardHeader` → `Breadcrumbs`).
+
+| Layer | Location / pattern |
+|-------|--------------------|
+| Route baseline | **`DashboardRouteBreadcrumbs`** in **`DashboardShell`** — derives crumbs from `usePathname()` + `dashboard-nav` config via **`buildDashboardRouteBreadcrumbs()`** in `lib/dashboard-route-breadcrumbs.ts` |
+| Dynamic / panel UX | **`useDashboardBreadcrumbs(items)`** — **override** route crumbs when a page needs a richer trail (listing/partner detail label, side panel open, loaded entity name). Clears on unmount so route crumbs return |
+| Labels | Prefer existing i18n under `dashboard.admin.*` / `dashboard.seller.*` (`nav.*`, feature `title`, `detail.title`, form titles). **Keep `en.json` and `ar.json` in sync** when adding keys |
+| New routes | Register the path in **`dashboard-nav.ts`** when it appears in sidebar nav; add a **dynamic rule** in `dashboard-route-breadcrumbs.ts` for `[id]`, `/new`, `/edit`, or other non-nav segments |
+| Do not | Hand-roll breadcrumb markup in page bodies; rely on header crumbs only |
+
+**Reference:** `admin-listings-view.tsx` (panel override), `listing-detail-page-view.tsx` (entity name override), `dashboard-route-breadcrumbs.ts` (static + dynamic route map).
+
+### Admin page layout
+
+- **`AdminPageLayout`** (`@/components/layout/admin-page-layout`) — title, optional description, optional header actions, then body. Default **`width="constrained"`** (`mx-auto max-w-5xl`); **`width="full"`** only when edge-to-edge is intentional.
+- Page title: `text-2xl font-semibold tracking-tight text-foreground`; description: `text-muted-foreground`.
+- **Non-table pages:** omit `fillViewport` — content grows naturally; dashboard main inner region scrolls.
+- **Paginated table pages:** pass **`fillViewport`** — page root is `flex-1 min-h-0 overflow-hidden` so it fills the dashboard main area **without** page-level scroll.
+
+### Paginated table page stack (all three required)
+
+Use together on any growing admin list with pagination:
+
+1. **`AdminPageLayout fillViewport`**
+2. Static chrome **`shrink-0`** — tabs, filters, error banners (e.g. `Tabs className="shrink-0"`)
+3. **`PaginatedTableLayout`** — table area `flex-1 overflow-hidden`; pagination `shrink-0` pinned at bottom
+4. **`DataTable scrollBody`** — sticky header; only `<tbody>` rows scroll inside the table frame
+
+Only table rows scroll — not the shell, not the page header/tabs, not the pagination bar.
+
+## Cross-cutting
+
+- Prefer **shared types in a package** (`packages/shared` or similar) when frontend and backend must agree on API shapes — do not duplicate interfaces by hand
+- Do not use `as` casts to silence errors; fix the underlying type
+- When adding dependencies that ship types, rely on bundled `@types/*` or the package's own types — avoid installing inaccurate community types
+
+## Database & migrations
+
+### Stable key primary keys (required)
+
+When a catalog or reference entity has a **stable, unique text identifier** (slug/key) that is the contract in code, APIs, JWT claims, and FKs — use **`key` (text) as the primary key**. Do **not** add a separate UUID `id` column alongside `key`.
+
+| Use `key` as PK | Keep UUID (or other surrogate) PK |
+|-----------------|-----------------------------------|
+| Roles, permissions, permission categories | Users, sessions, team applications |
+| Account types (e.g. `partner`, `seller`) | Document types (admin-managed, may rename label) |
+| Countries (`key`, e.g. `uae`, `pak`) | Any row created by user action at runtime |
+| Robot/listing catalogs: manufacturers, models, use cases, sensors, listing taxonomies, currencies, … | Cities — **composite PK** `(country_key, key)` (see **Admin catalog CRUD**) |
+
+**Model:** `@PrimaryKey` + `@Column(DataType.TEXT)` on `key`; translatable display copy in JSONB per **Backend i18n** (`display_name`, `name`, `label`, …). **FKs:** `role_key`, `account_type_key`, `permission_key` → parent `key`, not a UUID. **Seeds:** `INSERT … ('buyer', …)` / `ON CONFLICT ("key")` — no opaque UUID placeholders. **Shared constants:** export `*_KEY` from `packages/shared`; backend catalog re-exports for lookups. **APIs:** path params and DTO fields use the key (`roleKeys`, `accountTypeKey`); responses expose `key` + localized label — do not ship a redundant `id` when `key` is the identifier.
+
+**Exceptions (must be deliberate):** surrogate PK only when there is no stable business key, the identifier is user-generated and may change, or the entity is high-churn operational data (applications, uploads, audit rows).
+
+- **Two seed layers:**
+  1. **Reference data (SQL only):** roles, permissions, categories, and other catalog rows live in Sequelize migration SQL (`apps/backend/src/database/migrations/`). Do **not** add standalone SQL under a parallel `sql/` dump folder, duplicate catalog data in TypeScript, or use generators (e.g. no RBAC SQL generator). Edit migration SQL (or migration files that run raw SQL) directly; on `staging`/production add a **new forward migration**.
+  2. **Operational seeds (NestJS):** dev/staging seeders under feature modules — e.g. `SuperAdminSeeder` in `modules/admin/seeders/`. **`pnpm db:seed`** (`scripts/seed.ts`) bootstraps `SeedAppModule`, then runs in order: (1) destructive DB reset + re-run migrations (`pnpm db:reset` / equivalent), (2) delete all Firebase Auth users via `FirebaseService` (fail hard on partial delete), (3) seeders from `SeedRegistryService`. Pass **`--skip-reset`** to run seeders only (e.g. `pnpm db:seed --skip-reset super-admin`). New seeders: `@Injectable()` implementing `DbSeeder` in the feature module; register in `SeedRegistryService.list()`.
+- **Do not** put reference/catalog data in TypeScript seeders or Sequelize `bulkCreate` for roles/permissions — SQL migrations only
+- **Backend i18n (translatable DB fields):** any user-facing string **stored in the database** and shown in the UI per locale — catalog labels (`display_name`, `name`, `label`), entity fields (`title`, `description`, …), and similar copy — must be PostgreSQL JSONB in the shape `{ "en": "…", "ar": "…" }` (`DataType.JSONB` on the sequelize-typescript column). **`en` is required** on write; `ar` may be omitted (resolver falls back to `en`). Resolve per request via `resolveLocalized()` in `apps/backend/src/common/i18n/`. Request locale: `x-locale` header (frontend sends cookie value) → `Accept-Language` → `en`. **Read APIs** return a resolved `string` in response DTOs — do not expose raw JSONB on public or general list/detail reads. **Write/edit DTOs** accept localized fields (e.g. nested `{ en: string; ar?: string }` validated with class-validator). Auth/validation errors stay English — frontend maps via `translate-user-message.ts`. Permission/role display names are seeded in migration SQL — edit the migration (or forward migration on `staging`) when copy changes. **Legacy exception:** some existing columns are still plain `text` (e.g. `robot_listings.title`, `robot_listings.description`) — do **not** add new plain-text translatable columns; migrate to JSONB in forward migrations when iterating on that domain.
+- **Coded API errors (DEV-32062 — preferred for new user-facing throws):** the API error contract is migrating from English-string matching to stable **codes** (mirrors the auth stack). **Backend:** throw via `codedConflict`/`codedNotFound`/`codedBadRequest`/`codedForbidden`/`codedTooManyRequests` (`common/exceptions/coded-http.exception.ts`) with an `API_ERROR_CODES` constant from `@constellation/shared` — e.g. `codedConflict(API_ERROR_CODES.MANUFACTURER_KEY_EXISTS)`, `codedForbidden(API_ERROR_CODES.LISTING_WRONG_PARTNER_SURFACE)`; the global `CodedExceptionFilter` serializes `{ statusCode, code }`. Naming `api.<domain>.<reason>` snake_case; shared reasons `api.common.*`; cross-domain not-founds use the owning domain's code (cities→`api.country.not_found`, models→`api.manufacturer.not_found`). Own **public + admin** surfaces together; preserve status codes (400/403/404/409). **`@RequireActiveRole`** surface mismatches use **`codedForbidden`** with listing/common codes — see **JWT active role & access control**. Document coded bodies via the OpenAPI composites' `{ codes: [...] }` slots (`swagger/api-responses.ts` `ApiCodedError`/`ApiCodedBadRequest`). **Frontend:** clients extract `code` via `parseApiErrorResponse` → `AuthRequestError.code`; `translateAuthRequestError` resolves it through `translateAuthCode` → `t('errors.api.<domain>.<reason>')`. **Do not** add new `API_MESSAGE_KEY_MAP` entries (the map only shrinks — guarded by `apps/backend/test/api-message-map-guardrail.e2e-spec.ts`); **do not** add a `translateApiCode` wrapper. Restore predicates compare `error.code` via `isApiCode(...)`, not `lookupMessageKey`. Every new code needs EN **and** AR `errors.api.*` keys (enforced by `apps/backend/test/error-code-locales.e2e-spec.ts`). Legacy `new ConflictException('English')` throws + their map entries remain only for un-migrated domains.
+- **Soft delete:** catalog/domain entities that may gain FK relations later (e.g. countries) use `deleted_at` (nullable timestamptz) via `@DeletedAt` + `@Table({ paranoid: true })` — soft-delete sets the timestamp; default scopes exclude deleted rows. For admin lists that include soft-deleted rows, query with `paranoid: false` and filter explicitly; do not hard-delete unless explicitly required
+- **Soft-delete restore (conflict + confirm):** when create/recreate hits an existing **soft-deleted** row (same stable id/slug), **never** auto-restore silently. Use this pattern everywhere:
+  - **Backend:** on create, look up with `paranoid: false`; if row exists and `deletedAt` is set and caller did not opt in → `409 Conflict`; optional DTO flag (e.g. `confirmRestore: boolean`) required to clear `deleted_at` (restore) and apply new payload. Active (non-deleted) duplicates still conflict distinctly. **Migrated domains** emit coded `409`s (`api.<domain>.key_previously_deleted` / `key_exists`) via `codedConflict` — see the coded-API-errors bullet above. **Un-migrated domains** still throw stable English (e.g. `Country key was previously deleted` / `Country key already exists`) mapped in `translate-user-message.ts` — do **not** add new map entries (migrate the domain to codes instead).
+  - **Frontend:** first submit without the flag → catch the “previously deleted” conflict (migrated domains: `isApiCode(error, API_ERROR_CODES.<DOMAIN>_KEY_PREVIOUSLY_DELETED)`; legacy: `isCountryRestoreRequired()`-style helper) → show a **confirmation dialog** warning that restore may reactivate linked data → resubmit with `confirmRestore: true` only after explicit user consent. References: `manufacturers` (coded — `RestoreManufacturerDialog`, `isManufacturerRestoreRequired`), `countries` (legacy string — `RestoreCountryDialog`, `CreateCountryDto.confirmRestore`).
+  - Do **not** use silent upsert/`ON CONFLICT DO UPDATE` restore for soft-deleted catalog rows without this two-step confirm flow.
+- **Super admin (dev/staging):** `pnpm db:seed` (full reset + Firebase clean + seeders) or `pnpm db:seed --skip-reset super-admin` (upsert only). Requires `SUPER_ADMIN_EMAIL`, `SUPER_ADMIN_PASSWORD`, Firebase Admin env, and `DATABASE_URL` in `apps/backend/.env`. Idempotent re-run via `--skip-reset super-admin` updates password and assigns **`super-admin`** as `primary_role_key` (no `org_id`)
+- **Never edit existing migrations from prior tasks.** Each new feature or task adds **two new forward migration files** — do not modify migration SQL that belongs to earlier work (including migrations already on `staging`).
+- **Index / unique constraint names (required):** PostgreSQL truncates identifiers longer than **63 characters**. Auto-generated `{table}_{columns}_idx` / `_key` names often exceed that — always name indexes explicitly.
+  - **Fix at creation time** in the **schema migration** where the index is first `CREATE INDEX` / `CREATE UNIQUE INDEX` — not in a later seed/backfill migration and not as a one-off `ALTER INDEX … RENAME TO …` bundled into unrelated work.
+  - Add **`@Index({ name: 'short_snake_name', fields: [...] })`** (or unique equivalent) on the sequelize-typescript model (≤ 63 chars; **prefer ≤ 55** for headroom) and use the **exact same** quoted name in migration SQL.
+  - Do **not** rely on Sequelize/Postgres default names when `{table}_{column…}_idx` would be long — also do **not** hand-write a shorter SQL name without matching `name` on the model `@Index`.
+  - Verify length before merging: `node -e 'console.log("name".length)'`. After authoring, run `pnpm db:migrate` on a fresh `db:reset` locally — model indexes and migration SQL must stay aligned.
+  - References: `listing_activity_event_list_reset_stale_created_idx` (`ListingActivityEvent`); `expert_credit_ledger_purchase_type_key` / `expert_credit_ledger_reservation_type_key` (`ExpertCreditLedgerEntry`); `payment_tx_events_tx_id_created_at_idx` pattern for `PaymentTransactionEvent` (legacy drift fixed via rename — new indexes must use explicit `name` up front).
+- **Two migrations per feature (required):**
+  1. **Schema** — `CREATE TABLE` / `ALTER TABLE` (add columns, indexes, FKs). **No** data backfills, reference `INSERT`s, permission seeds, or `role_permissions`. When replacing columns, **add** the new shape here; drop obsolete columns in migration 2 after backfill.
+  2. **Seed / data** — backfills (`UPDATE` from legacy columns), reference `INSERT`s, permissions, `role_permissions`, then `DROP COLUMN` / other cleanup once data is moved. **No** new tables or additive DDL unless required to complete the data move.
+- **While the task is in progress:** iterate freely on **that feature’s two new migrations** (edit SQL, reset local DB, re-run). Once merged or applied on shared envs, treat them like any other applied history — forward-fix only.
+- **`staging` / production:** only add new forward migrations; never rewrite applied migration history
+- After schema/model changes: update the sequelize-typescript model + add forward migration(s), then reset or migrate locally as needed:
+  ```bash
+  pnpm --filter backend db:reset   # destructive — dev only
+  pnpm --filter backend db:migrate
+  ```
+- After schema changes on a dev branch: migrate, verify `pnpm typecheck` and `pnpm build`
+- **Migration seeds are additive:** new permissions, roles, catalog rows, and `role_permissions` grants are **added** — do **not** remove, overwrite, or reassign existing seeded rows unless the user explicitly asks (e.g. deprecating a feature). Key-PK tables: `INSERT … ON CONFLICT ("key") DO UPDATE` only for intentional copy/sort updates — never reuse a **permission key** or **role key** for a different meaning. Before merging seed SQL, grep migrations for keys you plan to use and confirm they are unused. When a later migration adds admin permissions, grant them to Admin **in addition to** existing grants — do not drop prior `role_permissions` rows.
+
+## Theming (tweakcn)
+
+All UI styling uses **tweakcn** themes with semantic design tokens. Do not hardcode colors like `text-zinc-900`, `bg-white`, or hex values in components.
+
+**Do not edit theme CSS token values** (`apps/frontend/src/themes/tweakcn/themes/*.css`, `:root` / `.dark` variables) unless the user explicitly asks. Prefer component-level semantic classes (`bg-primary`, `dark:bg-accent`, …) for one-off light/dark differences.
+
+### Structure
+
+```
+apps/frontend/src/themes/
+├── tweakcn/
+│   ├── themes/
+│   │   ├── modern-minimal.css    # Theme CSS (tokens + @theme inline)
+│   │   └── modern-minimal.ts     # Theme metadata
+│   ├── registry.ts               # Register all tweakcn themes here
+│   └── types.ts
+├── provider.tsx                  # next-themes provider (light/dark)
+└── index.ts                      # Public exports
+```
+
+### Adding a new tweakcn theme
+
+1. Add `apps/frontend/src/themes/tweakcn/themes/<theme-id>.css` with tweakcn token variables
+2. Add matching `apps/frontend/src/themes/tweakcn/themes/<theme-id>.ts` metadata
+3. Register it in `registry.ts`
+4. Update the `@import` in `apps/frontend/src/app/globals.css` to point at the new CSS file
+
+### Light / dark mode
+
+- Color mode is class-based: `.dark` on `<html>` (via `next-themes`)
+- The active tweakcn theme CSS defines both `:root` (light) and `.dark` token sets
+- Use `ThemeProvider` from `@/themes` — already wired in `layout.tsx`
+- Use `ThemeToggle` from `@/components/ui/theme-toggle` for the header switcher
+- Never use `prefers-color-scheme` media queries in components; rely on semantic tokens
+
+### Semantic Tailwind classes (required)
+
+Use token-based utilities from the active theme:
+
+| Use case | Classes |
+|----------|---------|
+| Page background | `bg-background`, `text-foreground` |
+| Cards / panels | `bg-card`, `text-card-foreground`, `border-border` |
+| Primary actions | `bg-primary`, `text-primary-foreground` |
+| Secondary / subtle | `bg-secondary`, `text-secondary-foreground`, `bg-muted`, `text-muted-foreground` |
+| Accents / highlights | `bg-accent`, `text-accent-foreground` |
+| Destructive | `bg-destructive`, `text-destructive-foreground` |
+| Focus rings | `ring-ring`, `outline-ring/50` |
+| Radius | `rounded-lg` (uses `--radius` tokens) |
+| Shadows | `shadow-sm`, `shadow-md`, etc. |
+
+### Component conventions
+
+- Merge classes with `cn()` from `@/lib/utils` (re-exports `@constellation/shared/lib/utils`)
+- **Shared design system:** reusable primitives in `packages/shared/src/ui/` — import `@constellation/shared/ui` (Button, Checkbox, Dialog, Dropdown, FormActions, SelectableCard, **DataTable**, **SortableCatalogTable**, **Pagination**, **PaginatedTableLayout**, **Tabs**, **PageBackLink**, **StepIndicator**, form helpers, …). **`AppLoading`** is internal to the global loading provider — do not use in feature code. Use `Checkbox` and `Dropdown` instead of raw `<input type="checkbox">` / `<select>`. Use `SelectableCard` for card-style single/multi select lists. Each Next app must `@source` that path in `globals.css` and list `@constellation/shared` in `transpilePackages`
+- **App-only UI:** Next/i18n/theme-coupled pieces stay in `apps/frontend/src/components/ui/` (e.g. `theme-toggle`, `locale-switcher`, `password-visibility-toggle`)
+- Layout components go in `apps/frontend/src/components/layout/` — includes **`AdminPageLayout`**, **`DashboardShell`**, **`ViewportShell`**
+- Header must include `ThemeToggle` for color mode switching
+- **Test ids (required):** every **interactable** element (inputs, buttons, links, toggles, selectable cards, rows that are clicked) gets a **unique, stable `data-testid`** — add it even when not explicitly asked.
+  - **Source of truth:** the typed registry `TEST_IDS` in `@constellation/shared` (`packages/shared/src/test-ids.ts`). The frontend sets ids from it.
+  - **Use the `testId` prop** on shared primitives — it renders `data-testid` (and derives child ids): `Button`, `FormikTextField`, `Checkbox`, `Dropdown`, `SelectableCard`, `Pagination`, `Tabs`, `FileUploadField`, `FormActions`, `Dialog`, `SidePanel`, `StepIndicator`, `DataTable` (`testId` + `getRowTestId`).
+  - **Naming:** `<feature>-<element>[-<qualifier>]`, kebab-case; list rows embed a stable entity key (`catalog-row-${item.key}`) — never an array index; never derive from i18n text.
+  - **Form fields auto-derive:** `FormikTextField` / `FormikTextareaField` / `FormikActiveField` / `FormikDropdownField` default `data-testid` to `field-<name>` (e.g. `field-email`). Pass an explicit `testId` only when a screen needs a scoped/unique id (e.g. `signin-email`). So every Formik field is locatable by `field-<name>` without per-field wiring.
+  - **Enforced (error):** the `test-id/require-testid` ESLint rule fails lint when an interactive host element is missing `data-testid`.
+
+## UI polish (required — avoid dry UI)
+
+Dashboard, profile, and admin surfaces should feel intentional — not raw data dumps. Reuse shared primitives and the patterns below instead of gray read-only boxes, comma-separated labels, or stacks of identical outline buttons.
+
+### Metadata & badges
+
+| Data | Use | Avoid |
+|------|-----|-------|
+| Roles, status, provider, account type | **`StatusBadge`** with a mapped variant (tinted border + soft background) | `ReadOnlyField`, plain comma-separated text, or `Badge variant="muted"` for everything |
+| Immutable scalar copy (email, stable IDs) | **`ReadOnlyField`** or labeled text | Badges for long prose |
+| Multiple roles | **One row** of badges — primary role gets the strongest variant; secondary roles use distinct softer variants (e.g. `secondary`) | Separate stacked “primary” vs “roles” blocks |
+| Sign-in method | **`StatusBadge`** (same row/group as roles when on profile-style screens) | Plain read-only text field |
+
+- Map stable keys to variants in `apps/frontend/src/lib/*-badge-variants.ts` (see `profile-badge-variants.ts`, `partnerStatusVariant`) — **extend `StatusBadge`** in `packages/shared/src/ui/status-badge.tsx` before adding one-off colors in feature code.
+- The **`StatusBadge` tinted palette** (primary, amber, violet, emerald, sky, …) is the approved way to add semantic color to pills — same family as admin tables and **`CatalogActiveCell`**.
+
+### Vibrant field & section icons (required where applicable)
+
+Detail summaries, side panels, and other read-heavy blocks should **not** be plain label/value grids. Add **`lucide-react`** icons in **soft tinted tiles** so users can scan fields quickly — same family as **`StatusBadge`** (border + light fill), not bare gray icons.
+
+| Use case | Pattern |
+|----------|---------|
+| **Neutral metadata** (title, location, model, price, logistics, …) | **Sky** tile — light blue border/fill + blue icon (`border-sky-500/25 bg-sky-500/10 text-sky-700 dark:…`) |
+| **Positive / in-stock / add** | **Emerald** tile or emerald value text |
+| **Warning / out-of-stock / caution** | **Amber** tile or **`StatusBadge`** `amber` |
+| **Remove / negative adjustment** | **Destructive** tint (red tile or `rejected` badge) |
+
+**Implementation:**
+
+- **Labeled detail fields:** reuse **`ListingDetailField`** (`components/listings/listing-detail-field.tsx`) — pass a Lucide icon; the component renders the sky tile + label/value row. Extend this helper (or extract a shared `DetailFieldIcon` class) when the same pattern appears on new surfaces — do not copy-paste tile classes per view.
+- **Key metrics / panel headers** (e.g. current quantity in inventory): optional larger tile (`size-10`, `size-5` icon) beside the headline value; tint the **surrounding card** when state matters (emerald in stock, amber out of stock).
+- **Scope:** detail pages, side panels, profile-style summaries, and admin record views — **not** dense data tables, form inputs, or every inline label. One icon per logical field is enough; do not decorate table headers or pagination for decoration alone.
+- **Accessibility:** tiles are decorative — `aria-hidden` on the tile wrapper; meaning stays in the visible label text.
+- **References:** `seller-listing-details-content.tsx`, `partner-listing-details-content.tsx`, `listing-inventory-panel.tsx`, `listing-inventory-display.tsx` (semantic quantity colors).
+
+### Panels & secondary flows
+
+- **Slide-over detail / management** (sessions, partner detail, scrollable side content): shared **`SidePanel`** from `@constellation/shared/ui`, opened by an explicit button in the page flow.
+- Do **not** park heavy management UI in a permanent page column unless the design explicitly calls for a split layout.
+- Prefer **`SidePanel`** over **`Dialog`** for wide, scrollable lists (device lists, detail + actions).
+- **Panel loading:** initial fetch shows **`LoadingIndicator`** centered inside the panel body (`min-h-[min(24rem,60vh)]`) — **not** the global overlay. Pass **`trackGlobalLoading: false`** on API calls that power panel content (see `getPartner`, `getMySessions`). After first paint, refreshes dim existing content with a semi-transparent in-panel loader — do not flash empty or plain “Loading…” text.
+- **Panel transitions:** panel slide uses `SidePanel` animation; content fades in/out with `transition-opacity duration-300` when switching loading ↔ ready ↔ refresh.
+
+### List & detail refresh (required)
+
+Every **admin, partner, and seller** screen that shows a **paginated list** or **record detail** (full page or **`SidePanel`**) must include a manual **refresh** control — not only on first mount or locale change.
+
+| Surface | Pattern |
+|---------|---------|
+| Admin paginated list | **`AdminListToolbar`** (`admin-list-toolbar.tsx`) — debounced search + **`DetailRefreshButton`**. Wire reload via **`useLocaleRefetch`** (or equivalent fetch callback) so refresh keeps active **tabs, filters, search (`q`), sort, and page**. Use **`useAdminListSearch`** when the list supports search. |
+| Detail full page | **`DetailRefreshButton`** in the page header/actions row beside existing actions (edit, external link, etc.). |
+| Detail side panel | **`DetailRefreshButton`** in the panel header row (same row as title / open-full-page link). |
+
+**Shared primitives (do not reinvent):**
+
+- **`DetailRefreshButton`** — `apps/frontend/src/components/ui/detail-refresh-button.tsx`. Borderless icon button (`RefreshCw`, spin while refreshing). **Never** add a custom refresh button or duplicate its styles.
+- **`useLoadGeneration`** — guard detail/panel reloads so stale async responses cannot overwrite newer data (`startLoad` / `isCurrentLoad`).
+- **Panel/detail API calls:** pass **`trackGlobalLoading: false`** on fetches that power panel or in-place detail refresh — use in-panel loading/dim, not the global overlay.
+- **Copy:** `useTranslations('dashboard.admin.listControls')` → `refresh` for `ariaLabel`.
+- **Test ids:** register stable ids in **`TEST_IDS`** (`list-refresh`, `panelRefresh`, `detailRefresh` per feature) — see existing partners, listings, inspections, deal rooms, certified stock entries.
+
+**When adding a new list or detail view**, follow an existing reference (`partners-view.tsx`, `listing-detail-panel.tsx`, `seller-listing-detail-view.tsx`) — refresh is part of the definition of done, not optional polish.
+
+### File / photo upload fields
+
+- **Preview is the affordance:** clickable avatar/thumbnail; hover overlay (e.g. camera icon) when a file exists.
+- **Empty:** format hint + single **`Button variant="outline"`** upload action.
+- **With file:** replace + remove as **text actions** (foreground link + destructive text link, optional `·` separator) — not two matching outline buttons.
+- Reference: **`ProfilePhotoField`** (`components/profile/profile-photo-field.tsx`).
+
+### Dialog forms
+
+- Dialogs with inputs, dropdowns, or textareas must **clear all field values when closed** (cancel, backdrop, Escape, success) — see **Forms → Dialog / modal forms**. Route **`onOpenChange`** through one guarded handler; block close while saving.
+- Confirmation-only dialogs (no fields) do not need field reset — still guard close while `pending`.
+
+### Action hierarchy
+
+- One clear primary action per group (`Button` primary or outline).
+- **Primary on the end:** same rule as **Forms → Action buttons** — CTAs, header actions, card footers, and retry buttons align to **inline-end** unless a design says otherwise.
+- **Icon + label buttons:** always keep the icon and label on **one row** — use `inline-flex items-center gap-2` (or `gap-1.5` for compact links) on `Button`, `Link`, or native `<button>`; set icons to `shrink-0`. Never stack a `Plus` (or other) icon above label text on separate lines.
+- Secondary or low-risk actions: text links or icon buttons — do not stack multiple same-weight outline buttons side by side.
+- Destructive secondary actions (remove photo, sign out device): `text-destructive` text actions unless the flow is an explicit delete confirmation.
+
+### Backend → frontend user copy
+
+- User-facing API outcomes use **stable codes** (e.g. `auth.password_changed`), not English sentences — frontend maps via **`errors.*`** keys in locale files (`translateAuthCode`, `packages/shared/src/auth-codes.ts`).
+- Do not add new backend `{ message: '…' }` strings meant for direct display.
+
+### Operation feedback (required — toasts)
+
+**Every user-initiated API action** (forms, dialogs, side panels, admin CRUD, auth flows) must surface **success and failure via toast** — not silent success, not banner-only, not console-only.
+
+| Outcome | UX |
+|---------|-----|
+| Field validation (Zod / Formik) | **`FieldInlineError`** on the field — never toast |
+| API / Firebase **success** | **`showUserToast`** success — friendly localized copy |
+| API / Firebase **failure** | **`showUserToast`** error — via **`translateAuthRequestError`** / **`translateAuthCode`**; technical detail in **`console.error`** only |
+| Initial load inside panel/table shell | **`LoadingIndicator`** in-place (see **Panels**, **Loading states**) — not toast |
+| Retry affordance after load failure | Inline message + retry control **and** error toast when appropriate |
+
+**Infrastructure:** **`AppToaster`** in root layout (`react-hot-toast`). Base API: **`showUserToast`** / **`showUserSuccessToast`** / **`showUserErrorToast`** in `i18n/translate-user-message.ts`.
+
+**Feature wrappers** (thin helpers — add one per area when missing):
+
+| Area | Helper |
+|------|--------|
+| Admin catalog CRUD | `components/admin/catalog/catalog-toast.ts` |
+| Profile / dashboard account | `components/profile/profile-toast.ts` |
+| Public auth (forgot/reset/verify) | `components/auth/auth-toast.ts` |
+
+New features: add a small `*-toast.ts` wrapper rather than calling `toast.*` or `FormBanner` directly for API results.
+
+**Copy:** use **`errors.*`** keys, feature i18n keys, or backend **`code`** → locale mapping — never raw API English strings in toasts.
+
+**Do not:** use **`FormBanner`** as the only success/failure signal for a completed mutation; stack toast + global overlay for panel-scoped fetches (use **`trackGlobalLoading: false`** on panel APIs).
+
+### References
+
+- Profile: `profile-settings-form.tsx`, `profile-photo-field.tsx`, `manage-sessions-side-panel.tsx`, `profile-toast.ts`
+- Auth: `auth-toast.ts`, `forgot-password-form.tsx`, `verify-email-page-content.tsx`
+- Admin badges: `partners-view.tsx`, `catalog-active-cell.tsx`, `status-badge.tsx`
+- Admin CRUD toasts: `catalog-toast.ts`
+
+### Admin page layout (required)
+
+See **Viewport & page shells** for `fillViewport` and paginated table stacking. Summary:
+
+- **List/table admin pages** — `AdminPageLayout`; paginated growing lists add **`fillViewport`** + **`PaginatedTableLayout`** + **`DataTable scrollBody`**.
+- **Back navigation** — detail pages (deal room, inspection request, listing edit, etc.) use **`PageBackLink`** from `@constellation/shared/ui` via the **`backLink`** prop on **`AdminPageLayout`** — rendered **above** the title row (top-left), never in **`actions`** or below the header. Pass **`LinkComponent={Link}`** from `@/i18n/navigation` in client views.
+- **Form-heavy / wizard admin pages** — same layout (default constrained); no `fillViewport` unless the page also hosts a scrollable paginated table.
+
+### Loading states (required — single overlay only)
+
+- **One loader layer:** the global overlay in **`GlobalLoadingProvider`** (`apps/frontend/src/contexts/global-loading-provider.tsx`) is the **only** place that renders a full-page spinner. Do **not** add `AppLoading`, `<p>Loading…</p>`, or ad-hoc spinners in views, tables, or dialogs — stacked loaders hurt UX and force extra re-renders. **Exceptions:** (1) **`CatalogTableShell`** with **`LoadingIndicator`** for admin catalog initial list fetch; (2) **`SidePanel`** / dialog bodies — **`LoadingIndicator`** inside the panel (see **UI polish → Panels**); use **`trackGlobalLoading: false`** on those fetches so the global overlay does not stack.
+- **API tracking:** every frontend HTTP client must use **`trackFetch()`** from `@/lib/global-loading` (including `probeAuthSession` and all `*-api.ts` wrappers). The overlay appears automatically while any tracked request is in flight.
+- **Feature loading state:** views may keep `loadState.status === 'loading'` internally to **gate content** (hide table until ready, return `null` in dialog bodies) — but must **not** render a second loading UI except **`CatalogTableShell`** on admin catalog list pages (see **Admin catalog CRUD**). Button `disabled` + label changes (`Submitting…`, `Approving…`) are fine; they are not loaders.
+- **Auth guard:** `DashboardGuardLoading` returns `null`; session validation loading is covered by the global overlay via `trackFetch`.
+- **Dev delay:** `REQUEST_DELAY_MS` (backend middleware) and `NEXT_PUBLIC_REQUEST_DELAY_MS` (Next middleware) — default `0`; use locally to exercise the overlay. Document in `apps/*/.env.example`.
+- **`AppLoading`:** lives in `@constellation/shared/ui` for the provider only (`variant="overlay"`). Do not import it in feature components.
+
+### Data tables (required)
+
+- Use **`DataTable`** from `@constellation/shared/ui` for tabular admin data — do not hand-roll `<table>` markup in app code.
+- **Fixed layout:** `table-fixed` + `break-words` on all cells — columns stay stable; long text wraps.
+- **Border only:** table frame uses `border border-border` — **no** `rounded-*` on `DataTable` wrappers.
+- **Short / bounded lists** (e.g. countries): default `DataTable` without `scrollBody`; page scrolls via dashboard main. Add pagination + scroll stack when the list can grow (see **Pagination**, **Viewport & page shells**).
+- **Paginated growing lists:** **`scrollBody`** + **`PaginatedTableLayout`** + **`AdminPageLayout fillViewport`** — sticky header, rows scroll only, pagination pinned at bottom. Use default **`width="constrained"`** on `AdminPageLayout` (same as admin listings / team applications) — do not use `width="full"` unless the page design explicitly needs edge-to-edge layout.
+- **Column widths:** set `widthClassName` on every column. Reuse **`dataTableColumnWidth`** presets (`compact`, `narrow`, `medium`, `actions`, `actionsIcons`, `primary`, `details`, `flexible`, `prose`) — prefer presets over ad-hoc `w-[n%]`. Percentages on a row should sum to ~100% before the fixed actions column (`actionsIcons` / `w-14`).
+- **Grouped columns:** combine related metadata in one cell instead of spreading thin columns — e.g. **`details`** column with **`StatusBadge`** (or domain badge) + **`text-xs text-muted-foreground`** date on the next line (`dataTableColumnWidth.details`, `w-[22%]`). Primary entity column: title/name + optional subtitle (`primary` / `flexible`). Do **not** put status and submitted/updated dates in separate columns when they belong together. References: `admin-listings-view.tsx`, `team-applications-view.tsx`, `seller-listings-view.tsx`.
+- **Actions column:** labeled header (`table.actions`), `text-end`, `dataTableColumnWidth.actionsIcons` (`w-24`) or `w-14` for a single icon. Row actions are **icon buttons** (`lucide-react` + native `<button>` / `Link`), not full `Button` — unless design explicitly calls for a labeled button. `rounded-md p-1.5`, hover muted, **`aria-label`** from i18n.
+- **Empty / error / loading:** destructive text + retry `Button` on error; `emptyMessage` on `DataTable`. While fetching, hide table — **no** inline loader on paginated/operational lists (global overlay handles it). **Admin catalog lists** use **`CatalogTableShell`** instead — see **Admin catalog CRUD**.
+- **Table filter bars** — dropdown / filter controls on list pages sit in a **`flex shrink-0 flex-wrap items-end justify-end gap-4 pb-4`** row above the table (right-aligned, **`pb-4`** gap before the table). Reset **`page` to 1** when filters change.
+- **`FormBanner` moderation** — rejection / unpublish notes on listing detail use **`textAlign="start"`** + **`tone="emphasis"`** (`variant="error"` for rejected, `variant="warning"` for unpublished). Auth / form-level banners keep defaults (centered, subtle).
+- **Pills / badges in table cells:** `StatusBadge` uses `w-fit max-w-full` — flex column cells stretch children by default; badges must shrink-wrap.
+- **References:** `admin-listings-view.tsx` (grouped status + date, preset widths), `team-applications-view.tsx` (paginated + scroll body), `seller-listings-view.tsx` (status + date column), `countries-view.tsx` (short list), `roles-table.tsx`.
+- **Sortable catalogs:** use **`SortableCatalogTable`** (not `DataTable`) when admins drag-reorder by `sort_order` — see **Admin catalog CRUD**. Do **not** add DnD to core **`DataTable`**.
+
+## Admin catalog CRUD (required)
+
+Reference catalogs for robots, listings, and geography. Follow this section when adding or changing admin-managed catalog entities.
+
+**Execution checklist (historical):** `docs/manufacturers-crud-review-plan.md` — keep in sync when conventions change.
+
+### Nav & component layout
+
+| Area | Nav (`dashboard-nav.ts`) | Components (`components/admin/`) |
+|------|--------------------------|----------------------------------|
+| **Robot catalog** | **Manage** group: countries, manufacturers, models, use cases, sensors | Per-feature folder: `countries/`, `manufacturers/`, `models/`, `use-cases/`, `sensors/` — each holds `*-view`, `*-form-dialog`, delete/restore dialogs |
+| **Listing catalogs** (9 taxonomies) | **Manage** → **Listing catalogs** sub-group: logistics providers, listing types, used conditions, shipping methods, tracking options, cargo insurance, customs documents, secure payment, currencies | Parent `listing-catalogs/<entity>/` — same file pattern as robot catalog |
+| **Shared catalog UI** | — | `components/admin/catalog/` — `catalog-table-shell`, `catalog-active-cell`, `catalog-toast` |
+
+Match **`onboarding/`** folder grouping: colocate view + dialogs; do not leave flat `*-view.tsx` files at `components/admin/` root for new catalogs.
+
+### Migrations (schema vs seed)
+
+Every catalog (or DB) feature uses **two new forward migrations** — see **Database & migrations**. Do **not** append DDL or seeds to migrations from prior tasks.
+
+| Migration | Contents |
+|-----------|----------|
+| **Schema** | `CREATE TABLE`, indexes, FKs, `ALTER TABLE` (add columns). **No** backfills, catalog `INSERT`s, permission inserts, or `role_permissions`. When replacing columns, add the new column here; drop the old ones in migration 2. |
+| **Seed / data** | Backfills (`UPDATE` from legacy columns), permissions, `role_permissions`, catalog `INSERT`s, then `DROP COLUMN` / cleanup after data is moved. **No** new tables. |
+
+- **In-progress task:** edit only this feature’s two new migration files; `pnpm --filter backend db:reset` locally as needed.
+- **`staging` / production:** never rewrite applied history — add new forward migrations instead.
+- **Seeds are additive** — see **Database & migrations**; `ON CONFLICT` does **not** clear `deleted_at` (intentional).
+
+**Dev seed policy (reference placeholders):**
+
+| Catalog | Rule |
+|---------|------|
+| Manufacturers | One placeholder: `no-manufacturer` |
+| Models | One placeholder: `no-model`; **`manufacturer_key` optional** (nullable) |
+| Logistics providers | FRD provider rows seeded with **`is_active = false`** |
+| Currencies | **`usd` only** in seeds |
+| Other catalogs | FRD-aligned seeds unless product says otherwise |
+
+Export stable placeholder keys from **`packages/shared`** when multiple apps or tests reference the same catalog key (e.g. `no-manufacturer`, `no-model`).
+
+### Schema conventions
+
+- **Single `key` PK** for catalogs per **Stable key primary keys** — e.g. manufacturers, models, use cases, listing taxonomies. **No** UUID `id` beside `key`.
+- **Cities:** composite PK **`(country_key, key)`** — city slugs are unique **per country**, not globally. FKs from `users` / `team_applications` use **`(country_key, city_key)`** → `cities`.
+- **`is_active`:** on robot/listing catalogs that admins toggle (manufacturers, models, use cases, sensors, listing taxonomies, …). **Countries and cities** use **soft delete only** — no `is_active` column.
+- **Models:** `manufacturer_key` is **optional** (`null` allowed). Do not require manufacturer in create/update DTOs, Zod, or forms unless product changes. Validate manufacturer only when a key is provided (must be active, not soft-deleted).
+- **Localized copy:** same JSONB contract as **Backend i18n (translatable DB fields)** — admin edit DTOs expose localized fields; list/read APIs return resolved strings via `resolveLocalized()`.
+
+### Backend (admin module pattern)
+
+| Layer | Pattern |
+|-------|---------|
+| Routes | `@Controller('admin/<resource>')` — list, get by `:key`, create, patch, soft-delete |
+| Permissions | Pair per catalog: `admin.<resource>.update` + `admin.<resource>.delete` from `@constellation/shared`; list uses **`@RequireAnyPermissions(UPDATE, DELETE)`**; mutations use the specific grant |
+| Category | Seed permissions under **`catalog_management`** permission category |
+| List | Admin list includes inactive + soft-deleted filter as designed; **`order: [['sort_order', 'ASC'], ['created_at', 'DESC']]`** when entity has `sort_order` |
+| Reorder | **`PUT admin/<resource>/reorder`** — body **`ReorderCatalogKeysDto`** (`orderedKeys: string[]`); register **before** `:key` routes. Response `{ ok: true }`. Requires **UPDATE** permission |
+| Reorder logic | Load active rows → **`reorderCatalogByKeys(activeRows, orderedKeys, updateSortOrder)`** in `src/common/catalog/reorder-catalog-by-keys.ts` — validates full key set, 1-based `sort_order` |
+| Soft delete / restore | Same **`confirmRestore`** flow as countries — see **Database & migrations** |
+| OpenAPI | **`ApiProtectedAdminRoute`** composites only — document reorder with `validation: true` |
+
+**Sortable catalogs with reorder today:** use cases, sensors, logistics providers, listing types, used conditions, shipping methods, tracking options, cargo insurance options, customs document options, secure payment states, currencies.
+
+**Non-sortable (plain list / future pagination):** countries, cities (nested in countries UI), manufacturers, models.
+
+### Frontend (catalog views)
+
+| Concern | Pattern |
+|---------|---------|
+| Locale | **`useLocaleRefetch`** + pass **`AppLocale`** into admin API clients; guard with **`isCancelled()`** |
+| Load state | Discriminated union (`loading` / `error` / `ready`); wrap table in **`CatalogTableShell`** |
+| Table | **`SortableCatalogTable`** when entity has drag reorder + full unpaginated admin list; else **`DataTable`**. Reuse **`DataTableColumn`** + **`dataTableColumnWidth`** presets |
+| DnD + pagination | **Do not combine** — reorder needs the **full active list** in one table. Add pagination + `DataTable` only when the catalog outgrows short-list UX **and** does not reorder (e.g. manufacturers/models at scale — follow-up) |
+| Active column | **`CatalogActiveCell`** → **`StatusBadge`** (`approved` / `inactive`) — not plain Yes/No text |
+| Actions | Icon buttons, `dataTableColumnWidth.actionsIcons`, i18n **`aria-label`** — same as **Data tables** |
+| CRUD feedback | **`showCatalogSuccess`** / **`showCatalogError`** from `catalog-toast.ts` — same app-wide toast rules as **Operation feedback (toasts)**. Field errors stay **`FieldInlineError`**; create/update/delete/reorder failures → toast (+ inline retry on list load error via **`CatalogTableShell`**) |
+| Reorder UX | Optimistic row order in state; `reordering` disables drag handle; on API failure, refetch list |
+| Permissions in UI | Gate list/actions with **`useDashboardSession().permissions`** + `ADMIN.*` keys (update vs delete) |
+
+**References:** `use-cases-view.tsx` (sortable end-to-end), `countries-view.tsx` (DataTable + soft delete), `admin-use-cases.controller.ts`, `use-cases.service.ts` (`reorderUseCases`).
+
+### Tabs (shared UI)
+
+- Use **`Tabs`** from `@constellation/shared/ui` for filter/status tab bars — not raw button groups.
+- **Variants:** `underline` (default for admin list filters) and `pill` (segmented control). Pass `ariaLabel` for accessibility.
+- Tab labels from i18n; `onChange` via stable `useCallback` handler.
+
+## Authentication (Firebase + JWT)
+
+- **Flow:** Firebase client (email/password **and Google**) → `getIdToken()` → `POST /api/auth/firebase` → verify with Firebase Admin → on **new** signup: auto-create `Organization` (placeholder name/address) + `User` (`primary_role_key` = `org-admin`, `org_id` set) + `user_roles` row → issue JWTs in `user_sessions`
+- **Roles (v1):** three roles — `super-admin` (seeded only), `org-admin` (default self-serve signup), `user` (schema-ready; org-admin invite UI deferred). Permission keys in `@constellation/shared` — slim matrix for auth + org shell only (pattern: `platform.*`, `org.*`, `admin.*` as needed)
+- **Super admin:** dedicated `super-admin` role; `pnpm db:seed super-admin` creates user with `primary_role_key = super-admin`, `org_id` null (see **Database & migrations**)
+- **Organizations:** `users.org_id` FK; incomplete org profile (missing name/address) gates dashboard → `/onboarding/org` before shell access
+- **Multi-role / switch-role:** JWT **`role`** claim is session active role (same contract as reference fork); **`switch-role` UI deferred** in v1
+- **Public routes:** `@Public()`; global `JwtAuthGuard` otherwise; `@RequirePermissions` on privileged routes
+- **Headers:** `x-device-id`, `x-locale` on API requests
+- **Email:** Resend for forgot-password and email verification
+- **Frontend:** Firebase lazy init, Formik+Zod auth forms with **Google sign-in button**, routes: `/sign-in`, `/sign-up`, `/forgot-password`, `/reset-password`, `/verify-email`, `/onboarding/org`
+
+### Team join / applicant Firebase (onboarding)
+
+When creating or upgrading Firebase users for the **public join wizard** (not normal sign-up):
+
+| Step | Rule |
+|------|------|
+| **Submit** | Create Firebase on final submit only; roll back **new** Firebase user if DB write fails. Existing **Buyer** may reuse their `firebaseUid` and get password/displayName updated — track `createdNewFirebase`. |
+| **Approve** | Create/upgrade DB user + mark application approved in one **`sequelize.transaction(...)`**. Then set Firebase **`emailVerified: true`** so approved applicants can sign in (approval email must match auth gate). |
+| **Reject** | Update application status only. **Do not** `deleteUser` when a non-deleted **`users`** row already exists for that `firebaseUid` (existing Buyer). Delete Firebase only for applicants created solely for this application. |
+
+## File uploads & S3 (required for upload flows)
+
+Port pattern from onboarding — apply to any feature that uploads before persisting a parent record.
+
+### Storage keys
+
+- All app objects live under **`constellation/{module}/…`** (see `S3Service`). Onboarding docs: `constellation/onboarding/YYYY/MM/DD/{uuid}.ext`.
+- Validate keys with **`assertOnboardingStorageKey`** (or module-specific regex) on submit — reject arbitrary client paths.
+
+### Upload timing
+
+- **Defer S3 upload until commit time** when possible (join wizard: files stay as `File` in the browser until final submit). Avoids orphans from abandoned multi-step flows.
+
+### Device-bound upload registry
+
+- Public upload routes require **`x-device-id`** + shared upload key header (`ONBOARDING_UPLOAD_KEY_HEADER` / env pair documented in `apps/*/.env.example`).
+- **`OnboardingUploadRegistryService`** registers each key per device; submit asserts keys belong to the submitting device.
+- Registry is **in-memory per process** — multi-instance deploys need a shared store (e.g. Redis) before horizontal scale; document limitation in PR/deploy notes until then.
+
+### Orphan rollback (required)
+
+Any flow that uploads to S3 **before** the DB/parent record is saved must clean up on failure:
+
+1. **Backend:** on submit failure before success, delete S3 objects + **`releaseKeys`** for keys registered to that device (`revertOrphanUploads` in `TeamApplicationsService`). Mirror Firebase rollback in the same failure path.
+2. **Frontend:** upload **sequentially** (not unbounded `Promise.all`); on upload or submit failure, call **`POST /onboarding/uploads/revert`** (or feature equivalent) for keys already uploaded.
+3. **Success:** **`consumeKeys`** only after the parent record is persisted — keys referenced by saved rows are not orphans.
+
+**Reference:** `team-applications.service.ts` (`submitApplication`, `revertOrphanUploads`), `join-wizard.tsx`, `onboarding.controller.ts` (`uploads/revert`).
+
+## Backend conventions
+
+- Global `ValidationPipe` is enabled — DTOs use class-validator decorators
+- Keep Nest + Sequelize on CommonJS-compatible imports unless the whole backend is deliberately migrated to ESM
+- **Layering:** `controller` → `service` → Sequelize models / Firebase / Session modules; no Sequelize queries in controllers (see **Controllers (thin)** above)
+- **OpenAPI:** document every endpoint with **composite decorators** per **OpenAPI / Swagger** above — do not stack raw `@ApiOperation` / `@ApiOkResponse` / error decorators on new handlers; extend `api-routes.ts` when a new pattern is needed
+
+## ClickUp tickets
+
+When creating tasks in ClickUp (backlog, tech debt, follow-ups), use **short, human-readable** copy — not implementation dumps.
+
+**Title:** one clear line (what to do, not how).
+
+**Description:** brief markdown with small sections only when useful:
+
+- **What** — outcome in plain language (1–2 sentences)
+- **Why** — only if not obvious
+- **When** — e.g. “not this sprint” or priority hint
+- **Done when** — 2–4 bullet acceptance criteria
+
+**Avoid:** long paragraphs, file paths, code snippets, duplicate of rules/docs unless a link is needed.
+
+**List:** use the Constellation workspace list unless the user names another list.
+
+**Type:** use workspace types (`Enhancement`, `Bug`, `User Story`, etc.) — do not invent types.
+
+## Git
+
+- **Never push** — do not run `git push`, `gh` push flows, or any command that publishes commits to a remote. The user pushes when ready.
+- After local work, say what to run (e.g. `git push -u origin <branch>`) or that the branch is ready to push — do not push on their behalf.
+- **Commits:** only when the user explicitly asks. Do not commit proactively.
+- Follow the user’s git safety rules: no force-push to `main`/`master`, no `--no-verify`, no git config changes, no destructive history rewrites unless explicitly requested.
+
+## General
+
+- Minimize scope; match existing patterns
+- Do not commit `.env` files
+- Do not create additional Cursor rules files — keep all project rules in `.cursor/rules/constellation.mdc` (this file)
+
+### Additive changes (required)
+
+When introducing something new — permissions, nav items, API routes, env vars, migration seeds, shared UI, i18n keys, etc. — **add alongside what already exists**. Do **not** remove, replace, or silently overwrite prior entries unless the user **explicitly** requests removal, deprecation, or consolidation.
+
+| Area | Do | Don't |
+|------|-----|--------|
+| Permissions / RBAC seeds | New unique permission key + Admin grant | Reuse or overwrite an existing permission/role key in SQL |
+| Nav / feature flags | Add item + `permissionKey` | Drop unrelated nav entries when adding a new section |
+| API / types | Extend or add endpoints/types | Remove or rename shipped fields without a deliberate migration plan |
+| i18n | Add keys to `en.json` **and** `ar.json` in the same change (same paths) | Ship new UI keys in `en.json` only; delete keys used elsewhere |
+| Migrations (dev branch) | Append seed rows; edit only this branch's in-flux SQL | `ON CONFLICT DO UPDATE` that clobbers another feature's stable keys |
+| New catalog entities | `key` text PK per **Stable key primary keys** | UUID `id` + redundant unique `key` |
+
+If a permission key or seed collision is discovered, **assign a new unique key and keep both features** — fix forward; do not pick one winner unless the user says to drop the other.
+
+### Environment variables
+
+When introducing a **new** env var (backend `ConfigService`, frontend `NEXT_PUBLIC_*`, or CI):
+
+1. Add it to the matching **`apps/*/.env.example`** in the **same PR/change** — never leave new vars undocumented
+2. Include a **short comment**: what it does, where to get the value, and whether it is required
+3. Use an **empty placeholder** or safe dev default — never real secrets or production values
+4. **Optional vars** with code defaults: still list them in `.env.example` and note the default in the comment
+
+| App | File |
+|-----|------|
+| Backend | `apps/backend/.env.example` |
+| Frontend | `apps/frontend/.env.example` |
+
+**Pagination (when adding paginated lists):**
+
+| Var | App | Purpose |
+|-----|-----|---------|
+| `NEXT_PUBLIC_DEFAULT_PAGE_SIZE` | Frontend | Default items per page sent as API `limit` (default `20`) |
+| `PAGINATION_MAX_LIMIT` | Backend | Caps client `limit` in `PaginationService` (default `100`) |

@@ -1,0 +1,52 @@
+name: Release Orchestrator - Backend
+
+on:
+  workflow_dispatch:
+  push:
+    branches: ["staging", "uat", "master"]
+    paths:
+     - 'apps/backend/**'
+     
+permissions:
+  id-token: write
+  actions: write
+  contents: read
+
+jobs:
+  set-environment:
+    runs-on: ubuntu-latest
+    outputs:
+      github_environment_name: ${{ steps.setenv.outputs.github_environment_name }}
+      environment_name: ${{ steps.setenv.outputs.environment_name }}
+    steps:
+      - id: setenv
+        name: Set Environment
+        run: |
+          if [[ "${GITHUB_REF_NAME}" == "main" || "${GITHUB_REF_NAME}" == "master" ]]; then
+            ENV_NAME="prod"
+          elif [[ "${GITHUB_REF_NAME}" == "uat" ]]; then
+            ENV_NAME="uat"
+          elif [[ "${GITHUB_REF_NAME}" == "staging" ]]; then
+            ENV_NAME="staging"
+          fi
+          echo "github_environment_name=$ENV_NAME" >> $GITHUB_OUTPUT
+          echo "environment_name=$ENV_NAME" >> $GITHUB_OUTPUT
+
+  ci:
+    uses: Phaedra-Solutions/reuseable-templates/.github/workflows/docker-build-scan-cert.yml@main
+    needs: [set-environment]
+    with:
+      GITHUB_SHA: ${{ github.sha }}
+      GITHUB_ENVIRONMENT_NAME: ${{ needs.set-environment.outputs.github_environment_name }}
+    # secrets:
+    #  NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+  cd:
+    uses: Phaedra-Solutions/reuseable-templates/.github/workflows/ecs-update-value.yml@main
+    needs: [ci, set-environment]
+    with:
+      GITHUB_SHA: ${{ github.sha }}
+      GITHUB_ENVIRONMENT_NAME: ${{ needs.set-environment.outputs.github_environment_name }}
+      ENVIRONMENT_NAME: ${{ needs.set-environment.outputs.environment_name }}
+    # secrets:
+    #   DEVOPS_WORKFLOW_TOKEN: ${{ secrets.DEVOPS_WORKFLOW_TOKEN }}

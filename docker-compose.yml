@@ -1,0 +1,63 @@
+# Local backend stack — Postgres + Nest API (no Redis in v1).
+#
+# Prerequisites: apps/backend/.env with Firebase, JWT, Resend, etc. (copy from .env.example)
+#
+# First time:
+#   docker compose --profile setup run --rm migrate
+#   docker compose up --build
+#
+# API: http://localhost:4050/api/health
+# DB on host: localhost:5433
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: constellation
+    ports:
+      - "5433:5432"
+    volumes:
+      - constellation_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d constellation"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  migrate:
+    profiles: [setup]
+    build:
+      context: .
+      dockerfile: apps/backend/Dockerfile
+      target: build
+    working_dir: /app/apps/backend
+    command: ["pnpm", "db:migrate"]
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@db:5432/constellation?schema=public
+    depends_on:
+      db:
+        condition: service_healthy
+
+  backend:
+    build:
+      context: .
+      dockerfile: apps/backend/Dockerfile
+    restart: unless-stopped
+    ports:
+      - "4050:4050"
+    env_file:
+      - apps/backend/.env
+    environment:
+      NODE_ENV: production
+      PORT: 4050
+      DATABASE_URL: postgresql://postgres:postgres@db:5432/constellation?schema=public
+      WEB_URL: http://localhost:4000
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  constellation_pgdata:

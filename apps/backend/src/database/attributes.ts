@@ -1,0 +1,99 @@
+export const USER_ID_ATTRS = ['id'] as const;
+
+export const USER_PRIMARY_ROLE_KEY_ATTRS = ['primaryRoleKey'] as const;
+
+export const USER_AUTH_LOOKUP_ATTRS = [
+  'id',
+  'email',
+  'firebaseUid',
+  'authProvider',
+  'status',
+  'primaryRoleKey',
+  'photoUrl',
+  'emailVerifiedAt',
+] as const;
+
+export const USER_LOGIN_LOOKUP_ATTRS = [
+  'id',
+  'firebaseUid',
+  'email',
+  'status',
+  'photoUrl',
+  'emailVerifiedAt',
+  'primaryRoleKey',
+] as const;
+
+export const USER_STATUS_ATTRS = ['status'] as const;
+
+export const USER_PROFILE_ATTRS = [
+  'id',
+  'name',
+  'email',
+  'photoUrl',
+  'status',
+  'authProvider',
+  'orgId',
+  'primaryRoleKey',
+] as const;
+
+export const USER_SESSION_CREATE_ATTRS = ['name', 'deletedAt', 'status', 'primaryRoleKey'] as const;
+
+export const USER_SESSION_REFRESH_ATTRS = ['email', 'name', 'deletedAt', 'status', 'primaryRoleKey'] as const;
+
+export const USER_CHANGE_PASSWORD_ATTRS = ['id', 'email', 'firebaseUid', 'authProvider'] as const;
+
+export const USER_FIREBASE_UID_ATTRS = ['firebaseUid'] as const;
+
+export const USER_ORG_LOOKUP_ATTRS = ['id', 'orgId'] as const;
+
+export const USER_ADMIN_LIST_ATTRS = [
+  'id',
+  'name',
+  'email',
+  'status',
+  'orgId',
+  'primaryRoleKey',
+  'firebaseUid',
+  'createdAt',
+  'lastLoginAt',
+] as const;
+
+export const ROLE_KEY_ATTRS = ['key'] as const;
+
+export const ROLE_FILTER_ATTRS = ['key', 'displayName'] as const;
+
+export const ROLE_PROFILE_ATTRS = ['key', 'displayName'] as const;
+
+export const ROLE_ADMIN_LIST_ATTRS = ['key', 'displayName', 'createdAt'] as const;
+
+export const USER_ROLE_MEMBERSHIP_ATTRS = ['userId', 'roleKey'] as const;
+
+export const ORG_PROFILE_ATTRS = ['id', 'name', 'address'] as const;
+
+export const ORG_SUMMARY_ATTRS = ['id', 'name'] as const;
+
+export const SESSION_LIST_ATTRS = [
+  'id',
+  'deviceId',
+  'platform',
+  'ipAddress',
+  'userAgent',
+  'createdAt',
+  'lastActiveAt',
+] as const;
+
+export const SESSION_DEVICE_LOOKUP_ATTRS = ['id'] as const;
+
+export const SESSION_ACTIVE_ROLE_ATTRS = ['activeRoleKey'] as const;
+
+export const SESSION_REFRESH_VALID_ATTRS = ['id'] as const;
+
+export const SESSION_ACCESS_VALID_ATTRS = ['userId'] as const;
+
+export const ROLE_PERMISSION_KEY_ATTRS = ['permissionKey'] as const;
+
+export const ROLE_PERMISSION_JOIN_ATTRS = ['roleKey', 'permissionKey'] as const;
+
+export const PERMISSION_CATALOG_ATTRS = ['key', 'name', 'description', 'category', 'sortOrder'] as const;
+
+export const PERMISSION_CATEGORY_LABEL_ATTRS = ['label'] as const;

@@ -1,0 +1,28 @@
+# Dependencies and build output (rebuilt in image)
+**/node_modules
+**/.next
+**/dist
+**/coverage
+
+# Frontend — deployed via Amplify, not this image
+apps/frontend
+
+# Git and local env
+.git
+.gitignore
+**/.env
+**/.env.local
+**/.env.*.local
+
+# Dev tooling
+.cursor
+**/*.md
+!apps/backend/README.md
+**/test
+**/*.spec.ts
+**/*.e2e-spec.ts
+apps/backend/dist-shared-test
+
+# OS / editor
+.DS_Store
+**/.turbo

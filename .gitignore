@@ -1,0 +1,56 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+.pnp
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/versions
+
+# Build outputs
+dist/
+.next/
+out/
+build/
+coverage/
+
+# Prisma generated client
+apps/backend/src/generated/
+
+# Environment (commit .env.example files)
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# Logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/*
+!.vscode/extensions.json
+
+# Turbo
+.turbo/
+
+# TypeScript cache
+*.tsbuildinfo
+
+# Deployment
+.vercel/
+
+# Certificates / keys
+*.pem
+apps/backend/.credentials/
+**/firebase-adminsdk*.json
