@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 # New iTerm tab: 2×2 split — shared / frontend / backend dev servers + editor.
+# Windows equivalent: shell-script.ps1 (Windows Terminal)
 
 set -euo pipefail
 
@@ -17,7 +18,7 @@ if [[ -f "$FRONTEND_ENV" ]]; then
 fi
 
 SHARED_CMD="cd $(printf '%q' "$ROOT/packages/shared") && pnpm dev"
-FRONTEND_CMD="cd $(printf '%q' "$ROOT/apps/frontend") && PORT=$(printf '%q' "$FRONTEND_PORT") pnpm dev"
+FRONTEND_CMD="cd $(printf '%q' "$ROOT/apps/frontend") && pnpm exec next dev --port $(printf '%q' "$FRONTEND_PORT")"
 BACKEND_CMD="cd $(printf '%q' "$ROOT/apps/backend") && pnpm dev"
 
 if command -v cursor >/dev/null 2>&1; then

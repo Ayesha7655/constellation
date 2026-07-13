@@ -15,7 +15,7 @@ services:
     restart: unless-stopped
     environment:
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
+      POSTGRES_PASSWORD: "0000"
       POSTGRES_DB: constellation
     ports:
       - "5433:5432"
@@ -36,7 +36,7 @@ services:
     working_dir: /app/apps/backend
     command: ["pnpm", "db:migrate"]
     environment:
-      DATABASE_URL: postgresql://postgres:postgres@db:5432/constellation?schema=public
+      DATABASE_URL: postgresql://postgres:0000@db:5432/constellation?schema=public
     depends_on:
       db:
         condition: service_healthy
@@ -53,7 +53,7 @@ services:
     environment:
       NODE_ENV: production
       PORT: 4050
-      DATABASE_URL: postgresql://postgres:postgres@db:5432/constellation?schema=public
+      DATABASE_URL: postgresql://postgres:0000@db:5432/constellation?schema=public
       WEB_URL: http://localhost:4000
     depends_on:
       db:
