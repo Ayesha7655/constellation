@@ -1,4 +1,4 @@
-import { ADMIN } from '@constellation/shared';
+import { ADMIN, ORG, type PermissionKey } from '@constellation/shared';
 import { DASHBOARD_BASE_PATH } from '@/lib/roles';
 import type { DashboardNavIconKey } from '@/lib/dashboard-nav-icons';
 
@@ -6,8 +6,8 @@ export type DashboardNavItem = Readonly<{
   href: string;
   labelKey: string;
   iconKey?: DashboardNavIconKey;
-  permissionKey?: (typeof ADMIN)[keyof typeof ADMIN];
-  permissionAnyKeys?: readonly (typeof ADMIN)[keyof typeof ADMIN][];
+  permissionKey?: PermissionKey;
+  permissionAnyKeys?: readonly PermissionKey[];
 }>;
 
 export type DashboardNavSubGroup = Readonly<{
@@ -104,6 +104,29 @@ export const orgDashboardNav: DashboardNavConfig = {
           href: DASHBOARD_BASE_PATH.org,
           labelKey: 'org.nav.overview',
           iconKey: 'layoutDashboard',
+        },
+      ],
+    },
+    {
+      labelKey: 'org.nav.upworkGroup',
+      items: [
+        {
+          href: `${DASHBOARD_BASE_PATH.org}/upwork/profile`,
+          labelKey: 'org.nav.upworkProfile',
+          iconKey: 'briefcase',
+          permissionKey: ORG.FREELANCER_PROFILE_READ,
+        },
+        {
+          href: `${DASHBOARD_BASE_PATH.org}/upwork/filters`,
+          labelKey: 'org.nav.searchFilters',
+          iconKey: 'slidersHorizontal',
+          permissionKey: ORG.SEARCH_FILTERS_READ,
+        },
+        {
+          href: `${DASHBOARD_BASE_PATH.org}/upwork/extension`,
+          labelKey: 'org.nav.connectExtension',
+          iconKey: 'radar',
+          permissionKey: ORG.FREELANCER_PROFILE_UPDATE,
         },
       ],
     },

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# New iTerm tab: 2×2 split — shared / frontend / backend dev servers + editor.
-# Windows equivalent: shell-script.ps1 (Windows Terminal)
+# New iTerm tab: 2×2 split — frontend / backend / shared / filter-ai.
+# Opens Cursor/VS Code separately. Windows equivalent: shell-script.ps1
 
 set -euo pipefail
 
@@ -20,23 +20,20 @@ fi
 SHARED_CMD="cd $(printf '%q' "$ROOT/packages/shared") && pnpm dev"
 FRONTEND_CMD="cd $(printf '%q' "$ROOT/apps/frontend") && pnpm exec next dev --port $(printf '%q' "$FRONTEND_PORT")"
 BACKEND_CMD="cd $(printf '%q' "$ROOT/apps/backend") && pnpm dev"
+FILTER_AI_CMD="cd $(printf '%q' "$ROOT/apps/filter-ai") && pnpm dev"
 
 if command -v cursor >/dev/null 2>&1; then
-  EDITOR_LAUNCH="cursor ."
+  (cd "$ROOT" && cursor .) >/dev/null 2>&1 &
 elif command -v code >/dev/null 2>&1; then
-  EDITOR_LAUNCH="code ."
-else
-  EDITOR_LAUNCH="echo 'Neither cursor nor code found in PATH' >&2"
+  (cd "$ROOT" && code .) >/dev/null 2>&1 &
 fi
 
-EDITOR_CMD="cd $(printf '%q' "$ROOT") && ${EDITOR_LAUNCH}"
-
-osascript - "$SHARED_CMD" "$FRONTEND_CMD" "$BACKEND_CMD" "$EDITOR_CMD" <<'APPLESCRIPT'
+osascript - "$FRONTEND_CMD" "$BACKEND_CMD" "$SHARED_CMD" "$FILTER_AI_CMD" <<'APPLESCRIPT'
 on run argv
-	set sharedCmd to item 1 of argv
-	set frontendCmd to item 2 of argv
-	set backendCmd to item 3 of argv
-	set editorCmd to item 4 of argv
+	set frontendCmd to item 1 of argv
+	set backendCmd to item 2 of argv
+	set sharedCmd to item 3 of argv
+	set filterAiCmd to item 4 of argv
 
 	tell application "iTerm"
 		activate
@@ -62,7 +59,7 @@ on run argv
 					write text sharedCmd
 				end tell
 				tell fourth session
-					write text editorCmd
+					write text filterAiCmd
 				end tell
 			end tell
 		end tell

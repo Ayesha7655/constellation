@@ -3895,7 +3895,11 @@
       "nav": {
         "overview": "Overview",
         "accountGroup": "Account",
-        "profile": "Profile"
+        "profile": "Profile",
+        "upworkGroup": "Upwork",
+        "upworkProfile": "Freelancer profile",
+        "searchFilters": "Search filters",
+        "connectExtension": "Connect extension"
       },
       "pages": {
         "overview": {
@@ -5018,6 +5022,19 @@
         "wrong_buyer_surface": "Switch to your buyer account to manage saved matches.",
         "too_many_runs": "Too many match runs. Try again in a minute."
       },
+      "freelancer_profile": {
+        "not_found": "Save an Upwork profile before generating filters.",
+        "draft_not_found": "No pending profile import to confirm.",
+        "org_required": "You need an organization to sync an Upwork profile."
+      },
+      "search_filters": {
+        "not_found": "No search filters saved yet.",
+        "generate_failed": "Could not generate search filters. Try again."
+      },
+      "extension": {
+        "pairing_invalid": "That pairing code is invalid.",
+        "pairing_expired": "That pairing code expired. Generate a new one."
+      },
       "seller_trust_badge": {
         "not_eligible": "Your account is not eligible to apply for this badge.",
         "request_pending": "You already have a pending application for this badge.",
@@ -5553,12 +5570,73 @@
     "nav": {
       "overview": "Overview",
       "accountGroup": "Account",
-      "profile": "Profile"
+      "profile": "Profile",
+      "upworkGroup": "Upwork",
+      "upworkProfile": "Freelancer profile",
+      "searchFilters": "Search filters",
+      "connectExtension": "Connect extension"
     },
     "pages": {
       "overview": {
         "title": "Organization dashboard",
         "description": "Welcome to your organization workspace."
+      }
+    },
+    "upwork": {
+      "profile": {
+        "title": "Upwork freelancer profile",
+        "description": "This profile is attached to your organization and drives Apify job search filters.",
+        "save": "Save profile",
+        "saved": "Profile saved.",
+        "generateHint": "Save your profile, then generate search filters.",
+        "pendingDraft": "Pending import from Chrome extension",
+        "confirmImport": "Confirm import",
+        "discardImport": "Discard",
+        "imported": "Profile imported from extension.",
+        "fields": {
+          "title": "Title",
+          "overview": "Overview",
+          "skills": "Skills (comma-separated)",
+          "hourlyRateMin": "Hourly rate min (USD)",
+          "hourlyRateMax": "Hourly rate max (USD)",
+          "country": "Country",
+          "timezone": "Timezone",
+          "languages": "Languages (comma-separated)",
+          "exclusions": "Exclusions (comma-separated)",
+          "profileUrl": "Upwork profile URL"
+        },
+        "validation": {
+          "required": "Required"
+        }
+      },
+      "filters": {
+        "title": "Apify search filters",
+        "description": "Filters sent to blackfalcondata/upwork-scraper. Generate from your profile, then edit as needed.",
+        "generate": "Generate with AI",
+        "generating": "Generating…",
+        "save": "Save filters",
+        "saved": "Filters saved.",
+        "generated": "Filters generated.",
+        "jsonLabel": "Filter JSON",
+        "actorLabel": "Actor",
+        "provenance": "Source: {value}",
+        "needProfile": "Save a freelancer profile before generating filters.",
+        "invalidJson": "Invalid JSON"
+      },
+      "extension": {
+        "title": "Connect Chrome extension",
+        "description": "Sync your logged-in Upwork profile into this organization in one click — or use a short code.",
+        "oneClick": "Connect with one click",
+        "oneClickHint": "Requires the Constellation extension installed in this Chrome browser.",
+        "oneClickSuccess": "Extension connected.",
+        "oneClickMissing": "Extension not detected. Install it, then try again or use a pairing code.",
+        "codeTitle": "Pairing code",
+        "codeHint": "Open the extension → enter this code. Expires in 10 minutes.",
+        "generateCode": "Generate code",
+        "copyCode": "Copy code",
+        "copied": "Copied",
+        "installTitle": "Install",
+        "installSteps": "Load apps/extension as an unpacked extension in chrome://extensions (Developer mode)."
       }
     }
   }

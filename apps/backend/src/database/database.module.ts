@@ -11,9 +11,26 @@ import {
   User,
   UserRole,
   UserSession,
+  FreelancerProfile,
+  ProfileImportDraft,
+  SearchFilterSet,
+  ExtensionPairingCode,
 } from './models';
 
-const models = [Organization, Role, PermissionCategory, Permission, RolePermission, User, UserRole, UserSession];
+const models = [
+  Organization,
+  Role,
+  PermissionCategory,
+  Permission,
+  RolePermission,
+  User,
+  UserRole,
+  UserSession,
+  FreelancerProfile,
+  ProfileImportDraft,
+  SearchFilterSet,
+  ExtensionPairingCode,
+];
 
 @Global()
 @Module({

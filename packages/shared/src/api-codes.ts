@@ -122,6 +122,14 @@ export const API_ERROR_CODES = {
   MATCH_DEVICE_ID_REQUIRED: 'api.matching.device_id_required',
   MATCH_WRONG_BUYER_SURFACE: 'api.matching.wrong_buyer_surface',
   MATCH_TOO_MANY_RUNS: 'api.matching.too_many_runs',
+
+  FREELANCER_PROFILE_NOT_FOUND: 'api.freelancer_profile.not_found',
+  FREELANCER_PROFILE_DRAFT_NOT_FOUND: 'api.freelancer_profile.draft_not_found',
+  FREELANCER_PROFILE_ORG_REQUIRED: 'api.freelancer_profile.org_required',
+  SEARCH_FILTERS_NOT_FOUND: 'api.search_filters.not_found',
+  SEARCH_FILTERS_GENERATE_FAILED: 'api.search_filters.generate_failed',
+  EXTENSION_PAIRING_INVALID: 'api.extension.pairing_invalid',
+  EXTENSION_PAIRING_EXPIRED: 'api.extension.pairing_expired',
 } as const;
 
 export type ApiErrorCode = (typeof API_ERROR_CODES)[keyof typeof API_ERROR_CODES];

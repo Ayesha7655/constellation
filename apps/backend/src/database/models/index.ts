@@ -6,3 +6,7 @@ export { RolePermission } from './role-permission.model';
 export { User } from './user.model';
 export { UserRole } from './user-role.model';
 export { UserSession } from './user-session.model';
+export { FreelancerProfile } from './freelancer-profile.model';
+export { ProfileImportDraft } from './profile-import-draft.model';
+export { SearchFilterSet } from './search-filter-set.model';
+export { ExtensionPairingCode } from './extension-pairing-code.model';

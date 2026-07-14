@@ -16,3 +16,13 @@ export enum SessionPlatform {
   ANDROID = 'ANDROID',
   IOS = 'IOS',
 }
+
+export enum FreelancerProfileSource {
+  MANUAL = 'manual',
+  EXTENSION = 'extension',
+}
+
+export enum SearchFilterProvenance {
+  AI = 'ai',
+  MANUAL = 'manual',
+}

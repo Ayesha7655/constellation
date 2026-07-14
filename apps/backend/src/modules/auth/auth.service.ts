@@ -607,6 +607,29 @@ export class AuthService {
     }
   }
 
+  /** Issue JWT session tokens after a successful Chrome extension pairing-code exchange. */
+  async issueTokensForExtensionPairing(params: {
+    userId: string;
+    deviceId: string;
+    ipAddress?: string;
+    userAgent?: string;
+  }): Promise<AuthTokenResult> {
+    const user = await this.userModel.findByPk(params.userId, {
+      attributes: ['id', 'email', 'name', 'deletedAt', 'status', 'primaryRoleKey'],
+    });
+    if (!user || user.deletedAt) {
+      throw new UnauthorizedException('User account is not authorized');
+    }
+    return this.createSessionAndTokensForUser({
+      userId: params.userId,
+      email: user.email,
+      deviceId: params.deviceId,
+      platform: SessionPlatform.WEB,
+      ipAddress: params.ipAddress,
+      userAgent: params.userAgent,
+    });
+  }
+
   private async createSessionAndTokensForUser(params: {
     userId: string;
     email?: string;

@@ -1,0 +1,39 @@
+{
+  "manifest_version": 3,
+  "name": "Constellation Upwork Sync",
+  "version": "0.1.0",
+  "description": "Sync your logged-in Upwork profile into Constellation.",
+  "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAyuBnpwkFCx8ulJvum5/JuHnLZoAFaiULDn0EVBcs6mnV1Wy+KHNzx0b8l3m7ptDvDTI1CgUYOBNxzrB7DVepI+b0x2Bw431TnJ5LZo+Gs7VCWWR1lcTUAwE26oCWIIkSbVdGavMjMG+SNQpi6GFOp9CH+sUfL15uMjjiv2f62/J8qo7F8r0bO46zomYXOPKpzoXBiJK6VKGmlsc9g55tdqO4tXo4SyIU1MpeBhu70u+V2udy3wlJCj853oP3IvMIANoZRbu0OtYjWS7v2VLmzDNo8jFikQl4wpqXcp1R2e/Du7QiQvnIztxunFz3nWYANmcUMbYcNu4Kz3sz9TMb5QIDAQAB",
+  "permissions": ["storage", "activeTab"],
+  "host_permissions": [
+    "https://*.upwork.com/*",
+    "http://localhost:6051/*",
+    "http://127.0.0.1:6051/*",
+    "http://localhost:6050/*",
+    "http://127.0.0.1:6050/*",
+    "http://localhost:4050/*",
+    "http://127.0.0.1:4050/*"
+  ],
+  "externally_connectable": {
+    "matches": [
+      "http://localhost:6050/*",
+      "http://127.0.0.1:6050/*",
+      "http://localhost:4000/*",
+      "http://127.0.0.1:4000/*"
+    ]
+  },
+  "action": {
+    "default_title": "Constellation",
+    "default_popup": "popup.html"
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://*.upwork.com/*"],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ]
+}

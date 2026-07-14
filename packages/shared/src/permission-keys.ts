@@ -6,6 +6,10 @@ export const ORG = {
   PROFILE_READ: 'org.profile.read',
   PROFILE_UPDATE: 'org.profile.update',
   DASHBOARD_ACCESS: 'org.dashboard.access',
+  FREELANCER_PROFILE_READ: 'org.freelancer_profile.read',
+  FREELANCER_PROFILE_UPDATE: 'org.freelancer_profile.update',
+  SEARCH_FILTERS_READ: 'org.search_filters.read',
+  SEARCH_FILTERS_UPDATE: 'org.search_filters.update',
 } as const;
 
 export const ACCOUNT = {

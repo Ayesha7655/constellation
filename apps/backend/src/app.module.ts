@@ -12,6 +12,7 @@ import { AuthModule } from './modules/auth/auth.module';
 import { AdminModule } from './modules/admin/admin.module';
 import { HealthModule } from './health/health.module';
 import { UsersModule } from './modules/users/users.module';
+import { FreelancerModule } from './modules/freelancer/freelancer.module';
 
 @Module({
   imports: [
@@ -26,6 +27,7 @@ import { UsersModule } from './modules/users/users.module';
     AuthModule,
     AdminModule,
     UsersModule,
+    FreelancerModule,
   ],
   providers: [
     {

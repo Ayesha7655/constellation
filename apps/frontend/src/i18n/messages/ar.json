@@ -3895,7 +3895,11 @@
       "nav": {
         "overview": "نظرة عامة",
         "accountGroup": "الحساب",
-        "profile": "الملف الشخصي"
+        "profile": "الملف الشخصي",
+        "upworkGroup": "Upwork",
+        "upworkProfile": "ملف المستقل",
+        "searchFilters": "عوامل البحث",
+        "connectExtension": "ربط الإضافة"
       },
       "pages": {
         "overview": {
@@ -5018,6 +5022,19 @@
         "wrong_buyer_surface": "انتقل إلى حساب المشتري لإدارة عمليات البحث المحفوظة.",
         "too_many_runs": "محاولات مطابقة كثيرة جداً. حاول مرة أخرى بعد دقيقة."
       },
+      "freelancer_profile": {
+        "not_found": "احفظ ملف Upwork قبل إنشاء عوامل التصفية.",
+        "draft_not_found": "لا يوجد استيراد ملف معلّق للتأكيد.",
+        "org_required": "تحتاج إلى مؤسسة لمزامنة ملف Upwork."
+      },
+      "search_filters": {
+        "not_found": "لا توجد عوامل بحث محفوظة بعد.",
+        "generate_failed": "تعذّر إنشاء عوامل البحث. حاول مرة أخرى."
+      },
+      "extension": {
+        "pairing_invalid": "رمز الاقتران غير صالح.",
+        "pairing_expired": "انتهت صلاحية رمز الاقتران. أنشئ رمزاً جديداً."
+      },
       "seller_trust_badge": {
         "not_eligible": "حسابك غير مؤهل للتقديم على هذه الشارة.",
         "request_pending": "لديك بالفعل طلب قيد المراجعة لهذه الشارة.",
@@ -5553,12 +5570,73 @@
     "nav": {
       "overview": "نظرة عامة",
       "accountGroup": "الحساب",
-      "profile": "الملف الشخصي"
+      "profile": "الملف الشخصي",
+      "upworkGroup": "Upwork",
+      "upworkProfile": "ملف المستقل",
+      "searchFilters": "عوامل البحث",
+      "connectExtension": "ربط الإضافة"
     },
     "pages": {
       "overview": {
         "title": "لوحة تحكم المؤسسة",
         "description": "مرحباً بك في مساحة عمل مؤسستك."
+      }
+    },
+    "upwork": {
+      "profile": {
+        "title": "ملف المستقل على Upwork",
+        "description": "هذا الملف مرتبط بمؤسستك ويُستخدم لإنشاء عوامل بحث Apify.",
+        "save": "حفظ الملف",
+        "saved": "تم حفظ الملف.",
+        "generateHint": "احفظ ملفك ثم أنشئ عوامل البحث.",
+        "pendingDraft": "استيراد معلّق من إضافة Chrome",
+        "confirmImport": "تأكيد الاستيراد",
+        "discardImport": "تجاهل",
+        "imported": "تم استيراد الملف من الإضافة.",
+        "fields": {
+          "title": "المسمى",
+          "overview": "النبذة",
+          "skills": "المهارات (مفصولة بفواصل)",
+          "hourlyRateMin": "الحد الأدنى للأجر بالساعة (USD)",
+          "hourlyRateMax": "الحد الأقصى للأجر بالساعة (USD)",
+          "country": "البلد",
+          "timezone": "المنطقة الزمنية",
+          "languages": "اللغات (مفصولة بفواصل)",
+          "exclusions": "الاستثناءات (مفصولة بفواصل)",
+          "profileUrl": "رابط ملف Upwork"
+        },
+        "validation": {
+          "required": "مطلوب"
+        }
+      },
+      "filters": {
+        "title": "عوامل بحث Apify",
+        "description": "العوامل المرسلة إلى blackfalcondata/upwork-scraper. أنشئها من ملفك ثم عدّلها.",
+        "generate": "إنشاء بالذكاء الاصطناعي",
+        "generating": "جاري الإنشاء…",
+        "save": "حفظ العوامل",
+        "saved": "تم حفظ العوامل.",
+        "generated": "تم إنشاء العوامل.",
+        "jsonLabel": "JSON العوامل",
+        "actorLabel": "الممثل",
+        "provenance": "المصدر: {value}",
+        "needProfile": "احفظ ملف المستقل قبل إنشاء العوامل.",
+        "invalidJson": "JSON غير صالح"
+      },
+      "extension": {
+        "title": "ربط إضافة Chrome",
+        "description": "زامن ملف Upwork المسجّل دخولك مع هذه المؤسسة بنقرة واحدة — أو استخدم رمزاً قصيراً.",
+        "oneClick": "الربط بنقرة واحدة",
+        "oneClickHint": "يتطلب تثبيت إضافة Constellation في Chrome.",
+        "oneClickSuccess": "تم ربط الإضافة.",
+        "oneClickMissing": "لم يتم اكتشاف الإضافة. ثبّتها ثم أعد المحاولة أو استخدم رمز اقتران.",
+        "codeTitle": "رمز الاقتران",
+        "codeHint": "افتح الإضافة ← أدخل هذا الرمز. تنتهي صلاحيته خلال 10 دقائق.",
+        "generateCode": "إنشاء رمز",
+        "copyCode": "نسخ الرمز",
+        "copied": "تم النسخ",
+        "installTitle": "التثبيت",
+        "installSteps": "حمّل apps/extension كإضافة غير معبأة من chrome://extensions (وضع المطوّر)."
       }
     }
   }

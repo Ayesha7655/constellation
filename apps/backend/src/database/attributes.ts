@@ -97,3 +97,41 @@ export const ROLE_PERMISSION_JOIN_ATTRS = ['roleKey', 'permissionKey'] as const;
 export const PERMISSION_CATALOG_ATTRS = ['key', 'name', 'description', 'category', 'sortOrder'] as const;
 
 export const PERMISSION_CATEGORY_LABEL_ATTRS = ['label'] as const;
+
+export const FREELANCER_PROFILE_ATTRS = [
+  'id',
+  'orgId',
+  'title',
+  'overview',
+  'skills',
+  'hourlyRateMin',
+  'hourlyRateMax',
+  'country',
+  'timezone',
+  'languages',
+  'exclusions',
+  'profileUrl',
+  'source',
+  'updatedAt',
+] as const;
+
+export const PROFILE_IMPORT_DRAFT_ATTRS = ['id', 'orgId', 'payload', 'createdAt', 'expiresAt'] as const;
+
+export const SEARCH_FILTER_SET_ATTRS = [
+  'id',
+  'orgId',
+  'actorId',
+  'filters',
+  'provenance',
+  'updatedByUserId',
+  'updatedAt',
+] as const;
+
+export const EXTENSION_PAIRING_CODE_ATTRS = [
+  'id',
+  'code',
+  'userId',
+  'orgId',
+  'expiresAt',
+  'consumedAt',
+] as const;
