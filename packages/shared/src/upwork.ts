@@ -40,3 +40,24 @@ export type OrgFreelancerProfilePayload = {
   profileUrl: string | null;
   source: FreelancerProfileSource;
 };
+
+export type UpworkFilterGenerationProfile = Pick<
+  OrgFreelancerProfilePayload,
+  | 'title'
+  | 'overview'
+  | 'skills'
+  | 'hourlyRateMin'
+  | 'hourlyRateMax'
+  | 'country'
+  | 'timezone'
+  | 'languages'
+  | 'exclusions'
+>;
+
+export type GenerateUpworkFiltersRequest = {
+  profile: UpworkFilterGenerationProfile;
+};
+
+export type GenerateUpworkFiltersResponse = {
+  filters: UpworkApifySearchFilters;
+};

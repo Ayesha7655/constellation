@@ -17,7 +17,7 @@ export class OrgContextService {
       attributes: [...USER_ORG_LOOKUP_ATTRS],
     });
     if (!user?.orgId) {
-      codedNotFound(API_ERROR_CODES.FREELANCER_PROFILE_ORG_REQUIRED);
+      throw codedNotFound(API_ERROR_CODES.FREELANCER_PROFILE_ORG_REQUIRED);
     }
     return { userId: id, orgId: user.orgId };
   }

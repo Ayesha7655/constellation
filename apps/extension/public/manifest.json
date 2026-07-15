@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "Constellation Upwork Sync",
-  "version": "0.1.0",
-  "description": "Sync your logged-in Upwork profile into Constellation.",
+  "version": "0.2.0",
+  "description": "Sync your logged-in Upwork profiles into Constellation.",
   "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAyuBnpwkFCx8ulJvum5/JuHnLZoAFaiULDn0EVBcs6mnV1Wy+KHNzx0b8l3m7ptDvDTI1CgUYOBNxzrB7DVepI+b0x2Bw431TnJ5LZo+Gs7VCWWR1lcTUAwE26oCWIIkSbVdGavMjMG+SNQpi6GFOp9CH+sUfL15uMjjiv2f62/J8qo7F8r0bO46zomYXOPKpzoXBiJK6VKGmlsc9g55tdqO4tXo4SyIU1MpeBhu70u+V2udy3wlJCj853oP3IvMIANoZRbu0OtYjWS7v2VLmzDNo8jFikQl4wpqXcp1R2e/Du7QiQvnIztxunFz3nWYANmcUMbYcNu4Kz3sz9TMb5QIDAQAB",
   "permissions": ["storage", "activeTab"],
   "host_permissions": [
@@ -32,7 +32,7 @@
   "content_scripts": [
     {
       "matches": ["https://*.upwork.com/*"],
-      "js": ["content.js"],
+      "js": ["scraper/selectors.js", "scraper/extractor.js", "content.js"],
       "run_at": "document_idle"
     }
   ]

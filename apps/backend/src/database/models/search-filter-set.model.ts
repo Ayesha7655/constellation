@@ -10,6 +10,7 @@ import {
   UpdatedAt,
 } from 'sequelize-typescript';
 import { SearchFilterProvenance } from '../enums';
+import { FreelancerProfile } from './freelancer-profile.model';
 import { Organization } from './organization.model';
 import { User } from './user.model';
 
@@ -20,8 +21,12 @@ export class SearchFilterSet extends Model {
   declare id: string;
 
   @ForeignKey(() => Organization)
-  @Column({ type: DataType.UUID, allowNull: false, unique: true, field: 'org_id' })
+  @Column({ type: DataType.UUID, allowNull: false, field: 'org_id' })
   declare orgId: string;
+
+  @ForeignKey(() => FreelancerProfile)
+  @Column({ type: DataType.UUID, allowNull: false, unique: true, field: 'freelancer_profile_id' })
+  declare freelancerProfileId: string;
 
   @Column({ type: DataType.TEXT, allowNull: false, field: 'actor_id' })
   declare actorId: string;
@@ -48,6 +53,9 @@ export class SearchFilterSet extends Model {
 
   @BelongsTo(() => Organization)
   declare organization: Organization;
+
+  @BelongsTo(() => FreelancerProfile)
+  declare freelancerProfile: FreelancerProfile;
 
   @BelongsTo(() => User)
   declare updatedBy: User | null;

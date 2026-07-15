@@ -1,5 +1,5 @@
 ---
-description: Constellation monorepo conventions — frontend theming, UI polish, Nest + sequelize-typescript backend patterns, and project structure
+description: Constellation monorepo conventions for frontend, backend, Chrome extension, Filter AI, database, testing, and delivery
 alwaysApply: true
 ---
 
@@ -10,12 +10,204 @@ alwaysApply: true
 - **Package scope:** `@constellation/*` (`packages/shared`)
 - **Frontend:** `apps/frontend` — Next.js 16, TypeScript, Tailwind CSS v4
 - **Backend:** `apps/backend` — NestJS, sequelize-typescript, class-validator
-- Run both apps: `pnpm dev` from repo root
-- Default ports: frontend `4000`, backend `4050` (env-configurable)
-- Run `pnpm typecheck` before commits/CI — strict TypeScript on both apps
+- **Extension:** `apps/extension` — Chrome MV3, React, TypeScript, Vite. Load the built `dist/` directory.
+- **Filter AI:** `apps/filter-ai` — internal NestJS HTTP microservice for AI-backed filter generation
+- Run workspace apps: `pnpm dev` from repo root
+- Default ports: frontend `4000`, backend `4050`, Filter AI `4060` (all env-configurable)
+- Run `pnpm typecheck` before commits/CI — strict TypeScript across all TypeScript workspace apps
 - **v1 scope:** auth, organizations, RBAC shell — no domain modules (listings, inspections, etc.). Design spec: `docs/superpowers/specs/2026-07-11-constellation-v1-design.md`
 - **Caching (v1):** DB-only for auth/RBAC — **no Redis** in v1; `PermissionsService` lives in `apps/backend/src/database/` and reads grants from Postgres directly
 - **v1 simplification:** no multi-role switch (`POST /auth/switch-role`), no `@RequireActiveRole`, no Redis/cache layers — delete dead Robot24 code instead of carrying it forward
+
+## Chrome extension
+
+The Chrome extension is a first-class TypeScript app, not a collection of ad-hoc scripts. Its popup uses React
+and Vite; Chrome-specific background/content code stays minimal and framework-independent. Match frontend
+quality and separation without importing Next.js-only infrastructure.
+
+### Extension source layout (required)
+
+| Concern | Location | Responsibility |
+|---------|----------|----------------|
+| Popup composition | `apps/extension/src/app.tsx` | Shell composition only: header, active screen, feedback, footer |
+| Screens | `src/components/screens/` | Mutually exclusive loading, disconnected/connect, and connected/sync views |
+| Layout UI | `src/components/layout/` | Brand chrome, feedback, and popup-wide presentational pieces |
+| Orchestration | `src/hooks/` | Connection state, active tab, action state, feedback, and stable handlers |
+| Backend HTTP | `src/services/` | Pairing, refresh, logout, authenticated requests, and domain endpoints |
+| Chrome/platform helpers | `src/lib/` | Storage, config, active-tab parsing, and content-script messaging |
+| Contracts | `src/types/` | Session, scraped profile, feedback, and discriminated state types |
+| MV3 scripts/assets | `apps/extension/public/` | Manifest, background worker, and Upwork content script |
+| Local config | `apps/extension/config.js` | Ignored local values copied to `dist`; template is `config.example.js` |
+
+- Do not move API calls, token refresh, Chrome storage, tab queries, or scraping messages into React components.
+- Do not let `App` own connection/sync orchestration. Add behavior to the controller hook and focused services.
+- Do not create duplicate legacy files at the extension root. `public/` is the canonical source for
+  `manifest.json`, `background.js`, and `content.js`; `src/lib/` is canonical for TypeScript utilities.
+- Keep imports directional: screens → hook callbacks/types; hook → services/lib; services → lib/types.
+
+### Popup state and rendering
+
+- Model mutually exclusive UI with a discriminated union such as
+  `loading | disconnected | connected`; do not use combinations of unrelated booleans.
+- Render the active popup screen in one dedicated component using an exhaustive `switch`.
+- Never use nested ternaries to choose loading/connect/sync screens. A router is unnecessary unless the
+  extension gains real navigable pages/history; transient connection state is not routing.
+- `App` may conditionally render small optional regions such as feedback, but screen selection belongs in the
+  switch component.
+- Disconnected state shows pairing/connect actions only. Connected state shows sync/disconnect actions only.
+- Keep JSX handlers stable and named (`onClick={handleSync}`); multi-step logic belongs in `useCallback`.
+- Prefer an explicit action union (`idle | connecting | syncing | disconnecting`) if actions need independent
+  loading labels or concurrency guards; do not add multiple overlapping `isX` booleans.
+
+### Session and API behavior
+
+- Store extension session data in `chrome.storage.local`, never page `localStorage`.
+- Pairing and one-click connection must save access token, refresh token, API URL, and a stable device ID.
+- Authenticated requests retry once after `POST /auth/refresh` on `401`; failed refresh clears the stored session
+  and returns the popup to disconnected state.
+- Use structured HTTP status/code checks for authentication failures. Never infer auth state by matching error
+  message substrings.
+- Error translation may depend on the operation (`connect`, `sync`, `disconnect`); a profile validation `400`
+  must not be shown as an invalid pairing code.
+- Disconnect clears local credentials even when the backend is unavailable; server revocation is best effort.
+- Keep transport errors technical inside services and expose concise user copy to screens.
+- One-click pairing messages from the web app must be accepted only through manifest
+  `externally_connectable` origins and validated before storage.
+- Before expanding production auth, prefer a short-lived server exchange that creates an extension-specific
+  session instead of continually copying a web session into the extension.
+
+### Chrome and scraping boundaries
+
+- Validate tabs by parsing `URL`: require an Upwork hostname and the expected profile pathname. Do not use a
+  broad substring check that can match malicious or unrelated URLs.
+- Scraping runs in `public/content.js`; popup React code only requests a typed scrape result.
+- Keep DOM selectors defensive because Upwork markup changes. Prefer explicit `data-test`/`data-cy` selectors,
+  then bounded fallbacks; never collect unbounded page content.
+- Scraped data is a draft. Upload it to the profile-import endpoint and require review/confirmation in the web
+  app before persistence as a saved profile.
+- Treat extension and content-script messages as untrusted input and narrow response shapes before use.
+
+### Extension UI and build
+
+- Match the app's semantic visual language: background/card/border/primary/muted/destructive tokens, compact
+  cards, Lucide icons, visible focus rings, and light/dark support. Do not hardcode a disconnected visual system.
+- Keep `ThemeToggle` in the extension header. Initialize the saved `light | dark` preference before rendering,
+  persist it in `chrome.storage.local`, and fall back to the operating-system preference on first use.
+- Apply extension theme state through `data-theme` on the root element and semantic CSS variables; do not use
+  component-level hardcoded dark-mode colors or make the toggle depend on Next.js `next-themes`.
+- Every interactive element has a stable `data-testid`; do not derive IDs from display text or array indexes.
+- Keep the popup usable at its fixed width and avoid layouts that require horizontal scrolling.
+- The browser loads `apps/extension/dist`, not source files. `dist/` remains generated and ignored.
+- `pnpm --filter extension dev` runs a rebuild watcher; Chrome still requires **Reload** in
+  `chrome://extensions` after a rebuild.
+- Build once with `pnpm --filter extension build` before loading the unpacked extension or handing it off.
+- After extension changes run:
+
+```bash
+pnpm --filter extension typecheck
+pnpm --filter extension build
+```
+
+- Manually verify both disconnected and connected screens, invalid/expired pairing, one-click pairing, token
+  refresh, non-Upwork tabs, sync success, sync failure, and disconnect.
+
+## Filter AI microservice
+
+`apps/filter-ai` is currently an internal NestJS HTTP microservice. The backend is its only caller; the frontend
+and extension never call it directly. Preserve this internal boundary so the service can later become a
+standalone product without coupling UI clients to its provider or prompt contract.
+
+### Filter AI architecture (required)
+
+| Concern | Location | Responsibility |
+|---------|----------|----------------|
+| Bootstrap | `apps/filter-ai/src/main.ts` | Nest creation, global validation, shutdown hooks, port |
+| Root composition | `src/app.module.ts` | Global `ConfigModule`, health, and feature modules |
+| Internal auth | `src/common/guards/` | Constant-time `x-internal-key` validation; fail closed |
+| Health | `src/health/` | Process liveness only; no OpenAI call |
+| Feature transport | `src/modules/filter-generation/*controller.ts` | Thin route wiring and DTO boundary |
+| Orchestration | `*service.ts` | Provider selection and explicit fallback policy |
+| DTOs | `dto/` | `class-validator` request validation |
+| Prompts | `prompts/` | Reviewable/versionable system prompts and user-prompt builders |
+| Output schemas | `schemas/` | Strict runtime validation of model output |
+| Providers | `providers/` | OpenAI SDK integration only |
+| Fallbacks | `fallbacks/` | Pure deterministic filter generation |
+
+- Use Nest modules/controllers/services; do not reintroduce `node:http`, manual body buffering, or a monolithic
+  `index.ts`.
+- Controllers contain decorators and one-line delegation only. Put provider calls, policy, parsing, and errors
+  in services/providers.
+- Extend root `tsconfig.base.json`; do not weaken strict options.
+- Use Nest `Logger`, not `console`, and never log profile payloads, prompts containing user data, API keys, or
+  internal keys.
+
+### Internal HTTP contract and security
+
+- Preserve `GET /health` and authenticated `POST /v1/generate-filters` unless a coordinated versioned migration
+  updates both the service and backend client.
+- `GET /health` is liveness and remains unauthenticated. Generation requires `x-internal-key`.
+- Compare the shared key in constant time and fail closed when the key or configuration is missing.
+- Request DTOs validate nested profile fields with `class-validator`; global `ValidationPipe` uses
+  `whitelist`, `forbidNonWhitelisted`, and `transform`.
+- Shared compile-time request/response contracts belong in `packages/shared/src/upwork.ts`; runtime validation
+  remains at each network boundary.
+- The backend client must set a bounded timeout (`FILTER_AI_TIMEOUT_MS`), catch network/timeout/JSON failures,
+  reject null/arrays/malformed `filters`, and map failures to the stable coded API error.
+- Document backend-facing generation failures in the route's OpenAPI composite.
+- Keep `FILTER_AI_URL`, `FILTER_AI_INTERNAL_KEY`, `FILTER_AI_TIMEOUT_MS`, `OPENAI_API_KEY`, `OPENAI_MODEL`, and
+  `PORT` flat. Document every new variable in the relevant `.env.example` with a safe default or empty value.
+
+### Prompt organization and safety
+
+- Prompts are code artifacts, not strings embedded inside provider calls. Keep system instructions and user
+  prompt construction in `prompts/`.
+- State the target actor, exact allowed output fields, enum/range constraints, defaults, and omission policy.
+- Explicitly instruct the model that profile fields are untrusted data and that embedded instructions, role
+  changes, or output requests must be ignored.
+- Do not send fields unnecessary for generation (for example profile URL, source, org/user IDs, or secrets).
+- Keep prompt inputs bounded. Respect DTO length/count limits and add deliberate truncation before introducing
+  larger free-form fields.
+- Prefer low temperature and provider-supported structured JSON output, but still validate locally.
+- Prompt changes must be reviewed together with the output schema and deterministic fallback; avoid prompt/schema
+  contradictions such as different result ranges or allowing fields the schema rejects.
+
+### Output validation and fallback policy
+
+- Never trust or persist raw model JSON. Parse as `unknown`, validate with a strict schema, then apply explicit
+  defaults.
+- Unknown actor fields are rejected unless they are deliberately added to the shared contract, prompt, and
+  schema together.
+- Current compatibility policy:
+  - missing/example OpenAI key → deterministic fallback;
+  - empty, invalid JSON, or schema-invalid model output → deterministic fallback;
+  - OpenAI transport/auth/rate-limit/provider exception → generation failure, not silent fallback.
+- Do not broaden fallback-on-provider-error while the backend persists provenance as `AI`. If resilience requires
+  that later, first add generation-mode metadata and a truthful provenance value such as `heuristic`.
+- Fallback functions stay pure and deterministic: deduplicate query terms, honor exclusions, map hourly-rate
+  bounds, and apply stable actor defaults.
+- Do not let model output silently override hard product constraints. Decide whether a value is a default or an
+  invariant and enforce it consistently in prompt, schema, and normalization.
+
+### Build, verification, and future extraction
+
+- `nest build` must emit deployable JavaScript; production runs `node dist/main.js`. Do not use `tsx` as the
+  production runtime.
+- After Filter AI or shared-contract changes run:
+
+```bash
+pnpm --filter @constellation/shared build
+pnpm --filter filter-ai typecheck
+pnpm --filter filter-ai build
+pnpm --filter backend typecheck
+```
+
+- Smoke-test `/health`, missing/wrong internal key (`401`), DTO rejection (`400`), valid deterministic fallback,
+  malformed provider output, provider failure, and backend timeout/malformed-response handling.
+- Tests must mock the provider and must never call the real OpenAI API.
+- When deploying separately, build from the monorepo root so `@constellation/shared` is available; add a service
+  image/healthcheck and a release trigger covering `apps/filter-ai/**` plus relevant shared changes.
+- A later standalone app may add public auth, persistence, UI, billing, or provider selection. Add those around
+  the internal generation module; do not collapse prompt/provider/domain logic back into controllers.
 
 ## Database module (required)
 
@@ -43,7 +235,7 @@ Every Sequelize **read** (`findOne`, `findAll`, `findByPk`, `findAndCountAll`, a
 
 ## TypeScript safety
 
-Both apps extend shared strict settings from `tsconfig.base.json` at the repo root. Do not weaken compiler options locally without a deliberate reason.
+All TypeScript apps extend shared strict settings from `tsconfig.base.json` at the repo root. Do not weaken compiler options locally without a deliberate reason.
 
 ### Shared strict options (`tsconfig.base.json`)
 
@@ -56,13 +248,17 @@ Both apps extend shared strict settings from `tsconfig.base.json` at the repo ro
 ### Typecheck pipeline
 
 ```bash
-pnpm typecheck          # turbo: runs both apps
+pnpm typecheck          # turbo: runs all workspace typechecks
 pnpm --filter frontend typecheck
 pnpm --filter backend typecheck
+pnpm --filter extension typecheck
+pnpm --filter filter-ai typecheck
 ```
 
 - **Frontend:** `tsc --noEmit` (config: `apps/frontend/tsconfig.json`)
 - **Backend:** `tsc --noEmit` (config: `apps/backend/tsconfig.json`, includes `src/`)
+- **Extension:** `tsc --noEmit` (config: `apps/extension/tsconfig.json`)
+- **Filter AI:** `tsc --noEmit` (config: `apps/filter-ai/tsconfig.json`)
 
 Run `pnpm typecheck` after TypeScript changes and before opening PRs. Wire this into CI alongside `build` and `lint`.
 

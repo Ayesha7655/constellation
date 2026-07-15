@@ -101,6 +101,7 @@ export const PERMISSION_CATEGORY_LABEL_ATTRS = ['label'] as const;
 export const FREELANCER_PROFILE_ATTRS = [
   'id',
   'orgId',
+  'label',
   'title',
   'overview',
   'skills',
@@ -113,6 +114,7 @@ export const FREELANCER_PROFILE_ATTRS = [
   'profileUrl',
   'source',
   'updatedAt',
+  'createdAt',
 ] as const;
 
 export const PROFILE_IMPORT_DRAFT_ATTRS = ['id', 'orgId', 'payload', 'createdAt', 'expiresAt'] as const;
@@ -120,6 +122,7 @@ export const PROFILE_IMPORT_DRAFT_ATTRS = ['id', 'orgId', 'payload', 'createdAt'
 export const SEARCH_FILTER_SET_ATTRS = [
   'id',
   'orgId',
+  'freelancerProfileId',
   'actorId',
   'filters',
   'provenance',

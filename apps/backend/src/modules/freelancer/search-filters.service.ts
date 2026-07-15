@@ -19,25 +19,30 @@ export class SearchFiltersService {
     private readonly filterAiClient: FilterAiClient,
   ) {}
 
-  async getFilters(userId: string | undefined) {
+  async getFilters(userId: string | undefined, profileId: string) {
     const { orgId } = await this.orgContext.requireOrgIdForUser(userId);
+    await this.requireOwnedProfile(orgId, profileId);
+
     const row = await this.filterModel.findOne({
-      where: { orgId },
+      where: { orgId, freelancerProfileId: profileId },
       attributes: [...SEARCH_FILTER_SET_ATTRS],
     });
     if (!row) {
       return {
         filters: null,
         actorId: APIFY_UPWORK_JOBS_ACTOR_ID,
+        freelancerProfileId: profileId,
       };
     }
     return this.toResponse(row);
   }
 
-  async saveFilters(userId: string | undefined, dto: UpdateSearchFiltersDto) {
+  async saveFilters(userId: string | undefined, profileId: string, dto: UpdateSearchFiltersDto) {
     const { userId: id, orgId } = await this.orgContext.requireOrgIdForUser(userId);
+    await this.requireOwnedProfile(orgId, profileId);
+
     const existing = await this.filterModel.findOne({
-      where: { orgId },
+      where: { orgId, freelancerProfileId: profileId },
       attributes: [...SEARCH_FILTER_SET_ATTRS],
     });
 
@@ -54,6 +59,7 @@ export class SearchFiltersService {
 
     const created = await this.filterModel.create({
       orgId,
+      freelancerProfileId: profileId,
       actorId: APIFY_UPWORK_JOBS_ACTOR_ID,
       filters: dto.filters,
       provenance: SearchFilterProvenance.MANUAL,
@@ -63,15 +69,9 @@ export class SearchFiltersService {
     return this.toResponse(created);
   }
 
-  async generateFilters(userId: string | undefined) {
+  async generateFilters(userId: string | undefined, profileId: string) {
     const { userId: id, orgId } = await this.orgContext.requireOrgIdForUser(userId);
-    const profile = await this.profileModel.findOne({
-      where: { orgId },
-      attributes: [...FREELANCER_PROFILE_ATTRS],
-    });
-    if (!profile) {
-      codedNotFound(API_ERROR_CODES.FREELANCER_PROFILE_NOT_FOUND);
-    }
+    const profile = await this.requireOwnedProfile(orgId, profileId);
 
     const { filters } = await this.filterAiClient.generateFilters({
       profile: {
@@ -88,7 +88,7 @@ export class SearchFiltersService {
     });
 
     const existing = await this.filterModel.findOne({
-      where: { orgId },
+      where: { orgId, freelancerProfileId: profileId },
       attributes: [...SEARCH_FILTER_SET_ATTRS],
     });
 
@@ -105,6 +105,7 @@ export class SearchFiltersService {
 
     const created = await this.filterModel.create({
       orgId,
+      freelancerProfileId: profileId,
       actorId: APIFY_UPWORK_JOBS_ACTOR_ID,
       filters,
       provenance: SearchFilterProvenance.AI,
@@ -114,10 +115,22 @@ export class SearchFiltersService {
     return this.toResponse(created);
   }
 
+  private async requireOwnedProfile(orgId: string, profileId: string): Promise<FreelancerProfile> {
+    const profile = await this.profileModel.findOne({
+      where: { id: profileId, orgId },
+      attributes: [...FREELANCER_PROFILE_ATTRS],
+    });
+    if (!profile) {
+      throw codedNotFound(API_ERROR_CODES.FREELANCER_PROFILE_NOT_FOUND);
+    }
+    return profile;
+  }
+
   private toResponse(row: SearchFilterSet) {
     return {
       id: row.id,
       orgId: row.orgId,
+      freelancerProfileId: row.freelancerProfileId,
       actorId: row.actorId,
       filters: row.filters,
       provenance: row.provenance,

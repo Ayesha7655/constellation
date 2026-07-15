@@ -1,5 +1,5 @@
-import { Body, Controller, Get, Post, Put, Req, UseGuards } from '@nestjs/common';
-import { ORG } from '@constellation/shared';
+import { Body, Controller, Get, Param, ParseUUIDPipe, Post, Put, Req, UseGuards } from '@nestjs/common';
+import { API_ERROR_CODES, ORG } from '@constellation/shared';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RequirePermissions } from '../../common/permissions/require-permissions.decorator';
 import type { LocaleAwareRequest } from '../../common/types/request.types';
@@ -9,7 +9,7 @@ import { SearchFiltersService } from './search-filters.service';
 import { UpdateSearchFiltersDto } from './dto/update-search-filters.dto';
 
 @ApiLocaleBearerController('organizations')
-@Controller('organizations/me/search-filters')
+@Controller('organizations/me/freelancer-profiles/:profileId/search-filters')
 @UseGuards(JwtAuthGuard)
 export class SearchFiltersController {
   constructor(private readonly searchFiltersService: SearchFiltersService) {}
@@ -17,31 +17,39 @@ export class SearchFiltersController {
   @Get()
   @RequirePermissions(ORG.SEARCH_FILTERS_READ)
   @ApiJwtProtectedRoute({
-    summary: 'Get saved Apify search filters for the organization',
+    summary: 'Get saved Apify search filters for a freelancer profile',
     ok: { schema: { example: { actorId: 'blackfalcondata/upwork-scraper', filters: null } } },
+    notFound: { codes: [API_ERROR_CODES.FREELANCER_PROFILE_NOT_FOUND] },
   })
-  getFilters(@Req() request: LocaleAwareRequest) {
-    return this.searchFiltersService.getFilters(request.user?.sub);
+  getFilters(@Req() request: LocaleAwareRequest, @Param('profileId', ParseUUIDPipe) profileId: string) {
+    return this.searchFiltersService.getFilters(request.user?.sub, profileId);
   }
 
   @Put()
   @RequirePermissions(ORG.SEARCH_FILTERS_UPDATE)
   @ApiJwtProtectedRoute({
-    summary: 'Save Apify search filters (manual edit)',
+    summary: 'Save Apify search filters for a freelancer profile',
     ok: { schema: { example: { filters: { query: 'nestjs', maxResults: 50 } } } },
     validation: true,
+    notFound: { codes: [API_ERROR_CODES.FREELANCER_PROFILE_NOT_FOUND] },
   })
-  saveFilters(@Req() request: LocaleAwareRequest, @Body() dto: UpdateSearchFiltersDto) {
-    return this.searchFiltersService.saveFilters(request.user?.sub, dto);
+  saveFilters(
+    @Req() request: LocaleAwareRequest,
+    @Param('profileId', ParseUUIDPipe) profileId: string,
+    @Body() dto: UpdateSearchFiltersDto,
+  ) {
+    return this.searchFiltersService.saveFilters(request.user?.sub, profileId, dto);
   }
 
   @Post('generate')
   @RequirePermissions(ORG.SEARCH_FILTERS_UPDATE)
   @ApiJwtProtectedRoute({
-    summary: 'Generate Apify filters from org freelancer profile via filter-ai',
+    summary: 'Generate Apify filters from a freelancer profile via filter-ai',
     ok: { schema: { example: { provenance: 'ai', filters: { query: 'react developer' } } } },
+    notFound: { codes: [API_ERROR_CODES.FREELANCER_PROFILE_NOT_FOUND] },
+    badRequest: { codes: [API_ERROR_CODES.SEARCH_FILTERS_GENERATE_FAILED] },
   })
-  generateFilters(@Req() request: LocaleAwareRequest) {
-    return this.searchFiltersService.generateFilters(request.user?.sub);
+  generateFilters(@Req() request: LocaleAwareRequest, @Param('profileId', ParseUUIDPipe) profileId: string) {
+    return this.searchFiltersService.generateFilters(request.user?.sub, profileId);
   }
 }

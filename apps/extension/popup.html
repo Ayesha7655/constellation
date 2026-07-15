@@ -1,60 +1,13 @@
 <!doctype html>
-<html>
+<html lang="en">
   <head>
     <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Constellation</title>
-    <style>
-      body {
-        font-family: system-ui, sans-serif;
-        margin: 0;
-        padding: 12px;
-        width: 320px;
-        color: #111;
-      }
-      h1 {
-        font-size: 14px;
-        margin: 0 0 8px;
-      }
-      p {
-        font-size: 12px;
-        color: #555;
-        margin: 0 0 8px;
-      }
-      input,
-      button {
-        width: 100%;
-        box-sizing: border-box;
-        margin: 4px 0;
-        padding: 8px;
-      }
-      button {
-        cursor: pointer;
-      }
-      .row {
-        display: flex;
-        gap: 6px;
-      }
-      .row button {
-        width: auto;
-        flex: 1;
-      }
-      #status {
-        margin-top: 8px;
-        font-size: 12px;
-        white-space: pre-wrap;
-      }
-    </style>
   </head>
   <body>
-    <h1>Constellation ↔ Upwork</h1>
-    <p>Enter a pairing code from the dashboard, or connect with one click from the app.</p>
-    <input id="code" placeholder="6-digit code" maxlength="6" />
-    <div class="row">
-      <button id="pair">Connect</button>
-      <button id="sync">Sync profile</button>
-    </div>
-    <div id="status"></div>
-    <script src="config.js"></script>
-    <script src="popup.js"></script>
+    <div id="root"></div>
+    <script type="module" src="/config.js"></script>
+    <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

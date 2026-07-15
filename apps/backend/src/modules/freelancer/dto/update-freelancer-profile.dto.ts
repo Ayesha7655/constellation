@@ -1,16 +1,14 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
-import {
-  IsArray,
-  IsInt,
-  IsOptional,
-  IsString,
-  Max,
-  MaxLength,
-  Min,
-} from 'class-validator';
+import { IsArray, IsInt, IsOptional, IsString, Max, MaxLength, Min } from 'class-validator';
 
 export class UpdateFreelancerProfileDto {
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MaxLength(120)
+  label?: string | null;
+
   @ApiPropertyOptional()
   @IsOptional()
   @IsString()
@@ -62,14 +60,12 @@ export class UpdateFreelancerProfileDto {
   @IsOptional()
   @IsArray()
   @IsString({ each: true })
-  @MaxLength(40, { each: true })
   languages?: string[];
 
   @ApiPropertyOptional({ type: [String] })
   @IsOptional()
   @IsArray()
   @IsString({ each: true })
-  @MaxLength(120, { each: true })
   exclusions?: string[];
 
   @ApiPropertyOptional()

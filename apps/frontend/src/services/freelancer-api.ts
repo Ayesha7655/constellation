@@ -10,6 +10,7 @@ const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4050/api';
 export type FreelancerProfileDto = Readonly<{
   id: string;
   orgId: string;
+  label: string | null;
   title: string | null;
   overview: string | null;
   skills: string[];
@@ -22,22 +23,25 @@ export type FreelancerProfileDto = Readonly<{
   profileUrl: string | null;
   source: string;
   updatedAt: string;
+  createdAt: string;
 }>;
 
 export type ProfileImportDraftDto = Readonly<{
   id: string;
   payload: Record<string, unknown>;
+  createdAt: string;
   expiresAt: string;
 }>;
 
-export type FreelancerProfileResponse = Readonly<{
-  profile: FreelancerProfileDto | null;
+export type FreelancerProfilesListResponse = Readonly<{
+  profiles: FreelancerProfileDto[];
   pendingDraft: ProfileImportDraftDto | null;
 }>;
 
 export type SearchFiltersResponse = Readonly<{
   id?: string;
   orgId?: string;
+  freelancerProfileId?: string;
   actorId: string;
   filters: Record<string, unknown> | null;
   provenance?: string;
@@ -51,6 +55,7 @@ export type ExtensionPairingCodeResponse = Readonly<{
 }>;
 
 export type UpdateFreelancerProfilePayload = Readonly<{
+  label?: string | null;
   title?: string;
   overview?: string;
   skills?: string[];
@@ -100,40 +105,67 @@ async function orgRequest<T>(path: string, init?: RequestInit): Promise<T> {
   return response.json() as Promise<T>;
 }
 
-export function getFreelancerProfile(): Promise<FreelancerProfileResponse> {
-  return orgRequest('/organizations/me/freelancer-profile');
+const profilesBase = '/organizations/me/freelancer-profiles';
+
+export function listFreelancerProfiles(): Promise<FreelancerProfilesListResponse> {
+  return orgRequest(profilesBase);
+}
+
+export function createFreelancerProfile(
+  payload: UpdateFreelancerProfilePayload = {},
+): Promise<{ profile: FreelancerProfileDto }> {
+  return orgRequest(profilesBase, {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
 }
 
 export function updateFreelancerProfile(
+  profileId: string,
   payload: UpdateFreelancerProfilePayload,
 ): Promise<{ profile: FreelancerProfileDto }> {
-  return orgRequest('/organizations/me/freelancer-profile', {
+  return orgRequest(`${profilesBase}/${profileId}`, {
     method: 'PATCH',
     body: JSON.stringify(payload),
   });
 }
 
-export function confirmFreelancerProfileImport(): Promise<{ profile: FreelancerProfileDto }> {
-  return orgRequest('/organizations/me/freelancer-profile/import/confirm', { method: 'POST', body: '{}' });
+export function deleteFreelancerProfile(profileId: string): Promise<{ ok: true }> {
+  return orgRequest(`${profilesBase}/${profileId}`, { method: 'DELETE' });
+}
+
+export function confirmFreelancerProfileImport(
+  label?: string,
+): Promise<{ profile: FreelancerProfileDto }> {
+  return orgRequest(`${profilesBase}/import/confirm`, {
+    method: 'POST',
+    body: JSON.stringify(label ? { label } : {}),
+  });
 }
 
 export function discardFreelancerProfileImport(): Promise<{ ok: true }> {
-  return orgRequest('/organizations/me/freelancer-profile/import', { method: 'DELETE' });
+  return orgRequest(`${profilesBase}/import`, { method: 'DELETE' });
 }
 
-export function getSearchFilters(): Promise<SearchFiltersResponse> {
-  return orgRequest('/organizations/me/search-filters');
+export function getSearchFilters(profileId: string): Promise<SearchFiltersResponse> {
+  return orgRequest(`${profilesBase}/${profileId}/search-filters`);
 }
 
-export function saveSearchFilters(filters: Record<string, unknown>): Promise<SearchFiltersResponse> {
-  return orgRequest('/organizations/me/search-filters', {
+export function saveSearchFilters(
+  profileId: string,
+  filters: Record<string, unknown>,
+): Promise<SearchFiltersResponse> {
+  return orgRequest(`${profilesBase}/${profileId}/search-filters`, {
     method: 'PUT',
     body: JSON.stringify({ filters }),
   });
 }
 
-export function generateSearchFilters(): Promise<SearchFiltersResponse> {
-  return orgRequest('/organizations/me/search-filters/generate', { method: 'POST', body: '{}' });
+export function generateSearchFilters(profileId: string): Promise<SearchFiltersResponse> {
+  return orgRequest(`${profilesBase}/${profileId}/search-filters/generate`, {
+    method: 'POST',
+    body: '{}',
+  });
 }
 
 export function createExtensionPairingCode(): Promise<ExtensionPairingCodeResponse> {

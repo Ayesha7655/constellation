@@ -19,8 +19,11 @@ export class FreelancerProfile extends Model {
   declare id: string;
 
   @ForeignKey(() => Organization)
-  @Column({ type: DataType.UUID, allowNull: false, unique: true, field: 'org_id' })
+  @Column({ type: DataType.UUID, allowNull: false, field: 'org_id' })
   declare orgId: string;
+
+  @Column({ type: DataType.TEXT, allowNull: true })
+  declare label: string | null;
 
   @Column({ type: DataType.TEXT, allowNull: true })
   declare title: string | null;
