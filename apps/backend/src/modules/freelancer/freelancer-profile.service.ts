@@ -17,6 +17,7 @@ import type { ConfirmImportDto } from './dto/confirm-import.dto';
 import type { ImportFreelancerProfileDto } from './dto/import-freelancer-profile.dto';
 import type { UpdateFreelancerProfileDto } from './dto/update-freelancer-profile.dto';
 import { OrgContextService } from './org-context.service';
+import { UpworkOverviewService } from './upwork-overview.service';
 import type {
   FreelancerProfileResult,
   FreelancerProfilesListResult,
@@ -34,6 +35,7 @@ export class FreelancerProfileService {
     @InjectModel(ProfileImportDraft) private readonly draftModel: typeof ProfileImportDraft,
     @InjectModel(SearchFilterSet) private readonly filterSetModel: typeof SearchFilterSet,
     private readonly orgContext: OrgContextService,
+    private readonly upworkOverview: UpworkOverviewService,
   ) {}
 
   async listProfiles(userId: string | undefined): Promise<FreelancerProfilesListResult> {
@@ -114,7 +116,6 @@ export class FreelancerProfileService {
       languages: dto.languages ?? profile.languages,
       exclusions: dto.exclusions ?? profile.exclusions,
       profileUrl: dto.profileUrl !== undefined ? dto.profileUrl.trim() : profile.profileUrl,
-      source: FreelancerProfileSource.MANUAL,
     });
 
     const refreshed = await this.profileModel.findByPk(profile.id, {
@@ -160,6 +161,7 @@ export class FreelancerProfileService {
 
     if (existing) {
       await existing.update({ payload, expiresAt, createdByUserId: actorId });
+      await this.upworkOverview.markOrgExtensionConnected(orgId);
       return { draft: this.toDraftView(existing) };
     }
 
@@ -169,6 +171,7 @@ export class FreelancerProfileService {
       payload,
       expiresAt,
     });
+    await this.upworkOverview.markOrgExtensionConnected(orgId);
     return { draft: this.toDraftView(created) };
   }
 
@@ -216,6 +219,7 @@ export class FreelancerProfileService {
     });
 
     await draft.destroy();
+    await this.upworkOverview.markOrgExtensionConnected(orgId);
 
     const created = await this.profileModel.findByPk(profile.id, {
       attributes: [...FREELANCER_PROFILE_ATTRS],

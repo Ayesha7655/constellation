@@ -1,7 +1,11 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { API_ERROR_CODES, type GenerateUpworkFiltersRequest } from '@constellation/shared';
-import type { GenerateUpworkFiltersResponse } from '@constellation/shared';
+import {
+  API_ERROR_CODES,
+  normalizeUpworkApifyFilters,
+  type GenerateUpworkFiltersRequest,
+  type GenerateUpworkFiltersResponse,
+} from '@constellation/shared';
 import { codedBadRequest } from '../../common/exceptions/coded-http.exception';
 
 function isObjectRecord(value: unknown): value is Record<string, unknown> {
@@ -39,7 +43,13 @@ export class FilterAiClient {
       if (!isObjectRecord(data) || !isObjectRecord(data.filters)) {
         codedBadRequest(API_ERROR_CODES.SEARCH_FILTERS_GENERATE_FAILED);
       }
-      return { filters: data.filters };
+
+      const filters = normalizeUpworkApifyFilters(data.filters);
+      if (filters.queries.length === 0) {
+        codedBadRequest(API_ERROR_CODES.SEARCH_FILTERS_GENERATE_FAILED);
+      }
+
+      return { filters };
     } catch {
       codedBadRequest(API_ERROR_CODES.SEARCH_FILTERS_GENERATE_FAILED);
     }

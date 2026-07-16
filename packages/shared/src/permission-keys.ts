@@ -10,6 +10,11 @@ export const ORG = {
   FREELANCER_PROFILE_UPDATE: 'org.freelancer_profile.update',
   SEARCH_FILTERS_READ: 'org.search_filters.read',
   SEARCH_FILTERS_UPDATE: 'org.search_filters.update',
+  SCRAPE_RUNS_READ: 'org.scrape_runs.read',
+  SCRAPE_RUNS_CREATE: 'org.scrape_runs.create',
+  UPWORK_JOBS_READ: 'org.upwork_jobs.read',
+  UPWORK_SCORING_READ: 'org.upwork_scoring.read',
+  UPWORK_SCORING_UPDATE: 'org.upwork_scoring.update',
 } as const;
 
 export const ACCOUNT = {

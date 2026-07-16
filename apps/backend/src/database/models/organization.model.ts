@@ -23,6 +23,13 @@ export class Organization extends Model {
   @Column({ type: DataType.TEXT, allowNull: true })
   declare address: string | null;
 
+  @Column({ type: DataType.DATE, allowNull: true, field: 'extension_connected_at' })
+  declare extensionConnectedAt: Date | null;
+
+  /** Org Upwork relevancy weights + color thresholds; null → shared defaults. */
+  @Column({ type: DataType.JSONB, allowNull: true, field: 'upwork_scoring_config' })
+  declare upworkScoringConfig: Record<string, unknown> | null;
+
   @CreatedAt
   declare createdAt: Date;
 

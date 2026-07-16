@@ -1,7 +1,5 @@
-import { DashboardPlaceholderPage } from '@/components/dashboard/dashboard-placeholder-page';
+import { OrgUpworkDashboardView } from '@/components/dashboard/org-upwork-dashboard-view';
 
 export default function OrgDashboardPage() {
-  return (
-    <DashboardPlaceholderPage titleKey="org.pages.overview.title" descriptionKey="org.pages.overview.description" />
-  );
+  return <OrgUpworkDashboardView />;
 }

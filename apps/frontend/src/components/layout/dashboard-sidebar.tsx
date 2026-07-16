@@ -15,6 +15,7 @@ import {
 } from '@/lib/dashboard-nav';
 import { getDashboardNavIcon } from '@/lib/dashboard-nav-icons';
 import { filterDashboardNavByPermissions } from '@/lib/filter-dashboard-nav';
+import { DashboardSignOutButton } from '@/components/layout/dashboard-sign-out-button';
 import { cn } from '@/lib/utils';
 import { TEST_IDS } from '@constellation/shared';
 
@@ -168,103 +169,108 @@ export function DashboardSidebar({ config, onNavigate }: DashboardSidebarProps) 
   );
 
   return (
-    <nav className="flex flex-col gap-4 p-4" aria-label={t(navConfig.titleKey)}>
-      {navConfig.groups.map((group) => {
-        const groupKey = getGroupKey(group);
-        const collapsible = Boolean(group.labelKey);
-        const groupDefaultExpanded = isDashboardNavGroupExpandedByDefault(
-          navConfig.dashboard,
-          group,
-          groupKey,
-          activeGroupKey,
-        );
-        const isExpanded = isSectionExpanded(groupKey, collapsible, groupDefaultExpanded);
+    <div className="flex h-full min-h-0 flex-col">
+      <nav className="flex flex-1 flex-col gap-4 overflow-y-auto p-4" aria-label={t(navConfig.titleKey)}>
+        {navConfig.groups.map((group) => {
+          const groupKey = getGroupKey(group);
+          const collapsible = Boolean(group.labelKey);
+          const groupDefaultExpanded = isDashboardNavGroupExpandedByDefault(
+            navConfig.dashboard,
+            group,
+            groupKey,
+            activeGroupKey,
+          );
+          const isExpanded = isSectionExpanded(groupKey, collapsible, groupDefaultExpanded);
 
-        return (
-          <div key={groupKey} className="flex flex-col gap-1">
-            {group.labelKey ? (
-              <button
-                type="button"
-                onClick={() => onGroupToggle(group, groupKey)}
-                data-testid={TEST_IDS.dashboardNav.group(groupKey)}
-                aria-expanded={isExpanded}
-                className={cn(
-                  'flex w-full items-center justify-between gap-2 rounded-md px-3 py-1.5 text-start',
-                  'text-xs font-medium uppercase tracking-wide text-muted-foreground transition-colors',
-                  'hover:bg-muted/60 hover:text-foreground',
-                )}
-                aria-label={
-                  isExpanded
-                    ? t('collapseNavGroup', { group: t(group.labelKey) })
-                    : t('expandNavGroup', { group: t(group.labelKey) })
-                }
-              >
-                <span>{t(group.labelKey)}</span>
-                <ChevronDown
-                  className={cn('size-3.5 shrink-0 transition-transform duration-200', !isExpanded && '-rotate-90')}
-                  aria-hidden
-                />
-              </button>
-            ) : null}
-            {isExpanded ? (
-              <ul className="flex flex-col gap-0.5">
-                {group.items.map((item) => (
-                  <li key={item.href}>{renderNavItem(item, pathname, navConfig.basePath, t, onLinkClick)}</li>
-                ))}
-                {group.subGroups?.map((subGroup) => {
-                  const subGroupKey = getSubGroupKey(groupKey, subGroup);
-                  const subGroupDefaultExpanded = isDashboardNavSubGroupExpandedByDefault(
-                    navConfig.dashboard,
-                    group,
-                    subGroupKey,
-                    activeSubGroupKeys,
-                  );
-                  const isSubGroupExpanded = isSectionExpanded(subGroupKey, true, subGroupDefaultExpanded);
+          return (
+            <div key={groupKey} className="flex flex-col gap-1">
+              {group.labelKey ? (
+                <button
+                  type="button"
+                  onClick={() => onGroupToggle(group, groupKey)}
+                  data-testid={TEST_IDS.dashboardNav.group(groupKey)}
+                  aria-expanded={isExpanded}
+                  className={cn(
+                    'flex w-full items-center justify-between gap-2 rounded-md px-3 py-1.5 text-start',
+                    'text-xs font-medium uppercase tracking-wide text-muted-foreground transition-colors',
+                    'hover:bg-muted/60 hover:text-foreground',
+                  )}
+                  aria-label={
+                    isExpanded
+                      ? t('collapseNavGroup', { group: t(group.labelKey) })
+                      : t('expandNavGroup', { group: t(group.labelKey) })
+                  }
+                >
+                  <span>{t(group.labelKey)}</span>
+                  <ChevronDown
+                    className={cn('size-3.5 shrink-0 transition-transform duration-200', !isExpanded && '-rotate-90')}
+                    aria-hidden
+                  />
+                </button>
+              ) : null}
+              {isExpanded ? (
+                <ul className="flex flex-col gap-0.5">
+                  {group.items.map((item) => (
+                    <li key={item.href}>{renderNavItem(item, pathname, navConfig.basePath, t, onLinkClick)}</li>
+                  ))}
+                  {group.subGroups?.map((subGroup) => {
+                    const subGroupKey = getSubGroupKey(groupKey, subGroup);
+                    const subGroupDefaultExpanded = isDashboardNavSubGroupExpandedByDefault(
+                      navConfig.dashboard,
+                      group,
+                      subGroupKey,
+                      activeSubGroupKeys,
+                    );
+                    const isSubGroupExpanded = isSectionExpanded(subGroupKey, true, subGroupDefaultExpanded);
 
-                  return (
-                    <li key={subGroup.labelKey} className="mt-1 flex flex-col gap-0.5">
-                      <button
-                        type="button"
-                        onClick={() => onSubGroupToggle(group, subGroupKey)}
-                        data-testid={TEST_IDS.dashboardNav.group(subGroupKey)}
-                        aria-expanded={isSubGroupExpanded}
-                        className={cn(
-                          'flex w-full items-center justify-between gap-2 rounded-md px-3 py-1.5 ps-6 text-start',
-                          'text-xs font-medium text-muted-foreground transition-colors',
-                          'hover:bg-muted/60 hover:text-foreground',
-                        )}
-                        aria-label={
-                          isSubGroupExpanded
-                            ? t('collapseNavGroup', { group: t(subGroup.labelKey) })
-                            : t('expandNavGroup', { group: t(subGroup.labelKey) })
-                        }
-                      >
-                        <span>{t(subGroup.labelKey)}</span>
-                        <ChevronDown
+                    return (
+                      <li key={subGroup.labelKey} className="mt-1 flex flex-col gap-0.5">
+                        <button
+                          type="button"
+                          onClick={() => onSubGroupToggle(group, subGroupKey)}
+                          data-testid={TEST_IDS.dashboardNav.group(subGroupKey)}
+                          aria-expanded={isSubGroupExpanded}
                           className={cn(
-                            'size-3.5 shrink-0 transition-transform duration-200',
-                            !isSubGroupExpanded && '-rotate-90',
+                            'flex w-full items-center justify-between gap-2 rounded-md px-3 py-1.5 ps-6 text-start',
+                            'text-xs font-medium text-muted-foreground transition-colors',
+                            'hover:bg-muted/60 hover:text-foreground',
                           )}
-                          aria-hidden
-                        />
-                      </button>
-                      {isSubGroupExpanded ? (
-                        <ul className="flex flex-col gap-0.5">
-                          {subGroup.items.map((item) => (
-                            <li key={item.href}>
-                              {renderNavItem(item, pathname, navConfig.basePath, t, onLinkClick, 'ps-9')}
-                            </li>
-                          ))}
-                        </ul>
-                      ) : null}
-                    </li>
-                  );
-                })}
-              </ul>
-            ) : null}
-          </div>
-        );
-      })}
-    </nav>
+                          aria-label={
+                            isSubGroupExpanded
+                              ? t('collapseNavGroup', { group: t(subGroup.labelKey) })
+                              : t('expandNavGroup', { group: t(subGroup.labelKey) })
+                          }
+                        >
+                          <span>{t(subGroup.labelKey)}</span>
+                          <ChevronDown
+                            className={cn(
+                              'size-3.5 shrink-0 transition-transform duration-200',
+                              !isSubGroupExpanded && '-rotate-90',
+                            )}
+                            aria-hidden
+                          />
+                        </button>
+                        {isSubGroupExpanded ? (
+                          <ul className="flex flex-col gap-0.5">
+                            {subGroup.items.map((item) => (
+                              <li key={item.href}>
+                                {renderNavItem(item, pathname, navConfig.basePath, t, onLinkClick, 'ps-9')}
+                              </li>
+                            ))}
+                          </ul>
+                        ) : null}
+                      </li>
+                    );
+                  })}
+                </ul>
+              ) : null}
+            </div>
+          );
+        })}
+      </nav>
+      <div className="shrink-0 border-t border-border p-4">
+        <DashboardSignOutButton onNavigate={onNavigate} />
+      </div>
+    </div>
   );
 }

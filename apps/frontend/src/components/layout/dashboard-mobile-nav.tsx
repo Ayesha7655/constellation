@@ -64,7 +64,7 @@ export function DashboardMobileNav({ config }: DashboardMobileNavProps) {
                 <X className="size-5" aria-hidden />
               </button>
             </div>
-            <div className="flex-1 overflow-y-auto">
+            <div className="min-h-0 flex-1 overflow-hidden">
               <DashboardSidebar config={config} onNavigate={onNavigate} />
             </div>
           </aside>

@@ -3899,12 +3899,23 @@
         "upworkGroup": "Upwork",
         "upworkProfile": "Freelancer profile",
         "searchFilters": "Search filters",
+        "upworkScoring": "Scoring settings",
+        "upworkJobs": "Job results",
         "connectExtension": "Connect extension"
       },
       "pages": {
         "overview": {
           "title": "Organization dashboard",
           "description": "Welcome to your organization workspace."
+        },
+        "upworkProfileDetail": {
+          "title": "Profile details"
+        },
+        "upworkProfileDraft": {
+          "title": "Import draft"
+        },
+        "upworkJobDetail": {
+          "title": "Job details"
         }
       }
     }
@@ -5029,11 +5040,25 @@
       },
       "search_filters": {
         "not_found": "No search filters saved yet.",
-        "generate_failed": "Could not generate search filters. Try again."
+        "generate_failed": "Could not generate search filters. Try again.",
+        "queries_required": "Add at least one search query before running Apify."
       },
       "extension": {
         "pairing_invalid": "That pairing code is invalid.",
         "pairing_expired": "That pairing code expired. Generate a new one."
+      },
+      "scrape_run": {
+        "not_found": "That scrape run was not found.",
+        "already_active": "A scrape is already running for this profile.",
+        "apify_failed": "Apify search failed. Check the run status and try again.",
+        "apify_not_configured": "Apify is not configured. Set APIFY_TOKEN on the backend."
+      },
+      "upwork_job": {
+        "not_found": "That job was not found."
+      },
+      "upwork_scoring": {
+        "weights_invalid": "Scoring weights must be whole numbers that add up to 100.",
+        "thresholds_invalid": "Color thresholds must be 0–100 with green > orange > yellow."
       },
       "seller_trust_badge": {
         "not_eligible": "Your account is not eligible to apply for this badge.",
@@ -5574,18 +5599,38 @@
       "upworkGroup": "Upwork",
       "upworkProfile": "Freelancer profile",
       "searchFilters": "Search filters",
+      "upworkScoring": "Scoring settings",
+      "upworkJobs": "Job results",
       "connectExtension": "Connect extension"
     },
     "pages": {
       "overview": {
         "title": "Organization dashboard",
-        "description": "Welcome to your organization workspace."
+        "description": "Connect the extension, manage Upwork profiles, and review recent job matches.",
+        "freshTitle": "Connect the Chrome extension",
+        "freshDescription": "Pair the Constellation extension once, then sync Upwork profiles from your browser.",
+        "connectExtension": "Connect extension",
+        "openExtension": "Open extension page",
+        "syncTitle": "Sync an Upwork profile",
+        "syncDescription": "Extension is connected. Open your Upwork profile in Chrome and sync from the extension popup.",
+        "draftWaiting": "A profile import is waiting for review on the profiles page.",
+        "profilesTitle": "Freelancer profiles",
+        "profilesDescription": "Profiles synced for this organization.",
+        "goProfiles": "View all profiles",
+        "jobsTitle": "Recent jobs",
+        "jobsDescription": "Latest scored opportunities across your profiles.",
+        "goJobs": "View all jobs",
+        "jobMeta": "Score {score} · {budget}",
+        "budgetUnknown": "Budget n/a",
+        "openJob": "Open on Upwork",
+        "loadError": "Could not load the dashboard.",
+        "retry": "Retry"
       }
     },
     "upwork": {
       "profile": {
         "title": "Upwork freelancer profiles",
-        "description": "Your organization can store multiple Upwork profiles. Each profile has its own Apify search filters.",
+        "description": "Your organization can store multiple Upwork profiles. Open a card to edit details.",
         "save": "Save profile",
         "saved": "Profile saved.",
         "created": "Profile created.",
@@ -5593,7 +5638,7 @@
         "discarded": "Import draft discarded.",
         "generateHint": "Save your profile, then generate search filters.",
         "pendingDraft": "Pending import from Chrome extension",
-        "pendingDraftHint": "Review the scraped profile below, then confirm to add it as a new Upwork profile for this organization.",
+        "pendingDraftHint": "Review the scraped profile, then confirm to add it as a new Upwork profile.",
         "expiresAt": "Expires: {value}",
         "confirmImport": "Confirm import as new profile",
         "discardImport": "Discard",
@@ -5601,6 +5646,18 @@
         "selectProfile": "Active profile",
         "createProfile": "Add blank profile",
         "deleteProfile": "Delete profile",
+        "backToList": "Back to profiles",
+        "detailTitle": "Profile details",
+        "detailDescription": "Edit this profile. Source stays the same after save.",
+        "loadError": "Could not load this profile. Try again.",
+        "retry": "Retry",
+        "noDraft": "There is no pending import draft right now.",
+        "draftBadge": "Incoming draft",
+        "noTitle": "No title yet",
+        "source": {
+          "manual": "Manual",
+          "extension": "Extension"
+        },
         "newProfileLabel": "New profile",
         "unnamedProfile": "Untitled profile",
         "noProfiles": "No profiles yet",
@@ -5624,7 +5681,7 @@
       },
       "filters": {
         "title": "Apify search filters",
-        "description": "Filters sent to blackfalcondata/upwork-scraper. Pick a profile, generate from it, then edit as needed.",
+        "description": "Filters sent to getdataforme/upwork-actor (XYTgO05GT5qAoSlxy). Pick a profile, generate from it, then edit as needed.",
         "selectProfile": "Profile",
         "generate": "Generate with AI",
         "generating": "Generating…",
@@ -5636,6 +5693,121 @@
         "provenance": "Source: {value}",
         "needProfile": "Create or import a freelancer profile before managing filters.",
         "invalidJson": "Invalid JSON"
+      },
+      "scoring": {
+        "title": "Relevancy scoring",
+        "description": "Control how job matches are weighted and which score colors appear in the jobs list.",
+        "weightsTitle": "Signal weights",
+        "weightsHint": "Weights must add up to 100. Current sum: {sum}.",
+        "thresholdsTitle": "Score colors",
+        "thresholdsHint": "Green ≥ green threshold, orange ≥ orange, yellow ≥ yellow, otherwise red. Thresholds must decrease in that order.",
+        "rescoreHint": "Existing job scores update on the next scrape run for each profile.",
+        "save": "Save scoring",
+        "saved": "Scoring settings saved.",
+        "resetDefaults": "Reset to defaults",
+        "reset": "Scoring settings reset to defaults.",
+        "weights": {
+          "skills": "Skills overlap",
+          "keywords": "Title / overview keywords",
+          "budget": "Budget / rate fit",
+          "location": "Client location vs profile country",
+          "clientRating": "Client rating",
+          "proposals": "Lower competition (proposals)"
+        },
+        "thresholds": {
+          "green": "Green from",
+          "orange": "Orange from",
+          "yellow": "Yellow from"
+        },
+        "validation": {
+          "required": "Required",
+          "range": "Enter a whole number from 0 to 100",
+          "weightsSum": "Weights must add up to 100",
+          "thresholdsOrder": "Green must be greater than orange, and orange greater than yellow"
+        }
+      },
+      "jobs": {
+        "title": "Upwork job results",
+        "description": "Run Apify search for a profile, then review scored jobs for that profile.",
+        "selectProfile": "Profile",
+        "runNow": "Run now",
+        "running": "Running…",
+        "runStarted": "Search started.",
+        "needProfile": "Create or import a freelancer profile before running search.",
+        "latestRun": "Latest run",
+        "runCounts": "Fetched {fetched} · filtered {filtered} · saved {saved} · new {newCount}",
+        "search": "Search",
+        "searchPlaceholder": "Search titles…",
+        "filters": "Filters",
+        "filtersActive": "Filters on",
+        "filtersTitle": "Job filters",
+        "filtersDescription": "Score, sort, date range, and per-run new jobs.",
+        "minScore": "Min score",
+        "sort": "Sort",
+        "sortScore": "Score",
+        "sortDate": "Date",
+        "scrapedFrom": "From date",
+        "scrapedTo": "To date",
+        "applyFilters": "Apply",
+        "clearFilters": "Clear",
+        "runHistory": "Recent runs",
+        "showNewFromRun": "Show {count} new jobs",
+        "loadError": "Could not load jobs. Try again.",
+        "retry": "Retry",
+        "detailTitle": "Job details",
+        "detailDescription": "Scored match for the selected freelancer profile.",
+        "backToList": "Back to jobs",
+        "missingProfile": "Open this job from the jobs list so the profile context is included.",
+        "detail": {
+          "budget": "Budget",
+          "clientLocation": "Client location",
+          "posted": "Posted",
+          "scrapedAt": "Scraped",
+          "skills": "Skills",
+          "description": "Description",
+          "noDescription": "No description available.",
+          "clientRating": "Client rating",
+          "clientSpent": "Client spent",
+          "proposals": "Proposals",
+          "match": "Match",
+          "relevancyScore": "Relevancy score",
+          "aboutJob": "About the job",
+          "jobType": "Job type",
+          "experienceLevel": "Experience level",
+          "aboutClient": "About the client",
+          "activity": "Activity"
+        },
+        "breakdown": {
+          "skills": "Skills",
+          "keywords": "Keywords",
+          "budget": "Budget",
+          "location": "Location",
+          "clientRating": "Client rating",
+          "proposals": "Proposals"
+        },
+        "status": {
+          "queued": "Queued",
+          "running": "Running",
+          "succeeded": "Succeeded",
+          "failed": "Failed"
+        },
+        "table": {
+          "title": "Job",
+          "details": "Score",
+          "budget": "Budget",
+          "posted": "Posted",
+          "actions": "Actions",
+          "score": "{score}",
+          "new": "New",
+          "budgetUnknown": "Budget n/a",
+          "openJob": "Open on Upwork",
+          "empty": "No scored jobs for this profile yet. Save filters, then Run now."
+        },
+        "pagination": {
+          "previous": "Previous",
+          "next": "Next",
+          "pageOf": "Page {page} of {totalPages}"
+        }
       },
       "extension": {
         "title": "Connect Chrome extension",

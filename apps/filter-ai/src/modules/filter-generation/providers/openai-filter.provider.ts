@@ -1,6 +1,10 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import type { UpworkApifySearchFilters, UpworkFilterGenerationProfile } from '@constellation/shared';
+import {
+  DEFAULT_UPWORK_APIFY_FILTERS,
+  type UpworkApifySearchFilters,
+  type UpworkFilterGenerationProfile,
+} from '@constellation/shared';
 import OpenAI from 'openai';
 import { buildUpworkFilterUserPrompt, UPWORK_FILTER_SYSTEM_PROMPT } from '../prompts/upwork-filter.prompt';
 import { upworkFilterSchema } from '../schemas/upwork-filter.schema';
@@ -43,9 +47,9 @@ export class OpenAiFilterProvider {
       }
 
       return {
-        sort: 'recency',
-        maxResults: 50,
-        verifiedPaymentOnly: true,
+        item_limit: DEFAULT_UPWORK_APIFY_FILTERS.item_limit,
+        job_posted: DEFAULT_UPWORK_APIFY_FILTERS.job_posted,
+        proxyConfiguration: DEFAULT_UPWORK_APIFY_FILTERS.proxyConfiguration,
         ...result.data,
       };
     } catch (error) {

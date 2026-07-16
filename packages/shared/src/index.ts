@@ -7,4 +7,5 @@ export * from './api-codes';
 export * from './pagination';
 export * from './list-text-search';
 export * from './upwork';
+export * from './upwork-scoring';
 export * from './lib/utils';

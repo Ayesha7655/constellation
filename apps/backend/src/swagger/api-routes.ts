@@ -55,6 +55,7 @@ type ApiJwtProtectedRouteOptions = {
   notFoundUser?: boolean;
   notFound?: ErrorSlot;
   badRequest?: ErrorSlot;
+  conflict?: ErrorSlot;
   /** Domain `403` for row-level access or active-role enforcement (not the permission matrix). */
   forbidden?: ErrorSlot;
 };
@@ -180,6 +181,9 @@ export function ApiJwtProtectedRoute(options: ApiJwtProtectedRouteOptions) {
   }
   if (options.notFoundUser) {
     decorators.push(ApiNotFoundUser());
+  }
+  if (options.conflict) {
+    decorators.push(conflictResponse(options.conflict));
   }
   if (options.forbidden) {
     decorators.push(forbiddenResponse(options.forbidden));

@@ -18,7 +18,7 @@ export class SearchFiltersController {
   @RequirePermissions(ORG.SEARCH_FILTERS_READ)
   @ApiJwtProtectedRoute({
     summary: 'Get saved Apify search filters for a freelancer profile',
-    ok: { schema: { example: { actorId: 'blackfalcondata/upwork-scraper', filters: null } } },
+    ok: { schema: { example: { actorId: 'XYTgO05GT5qAoSlxy', filters: null } } },
     notFound: { codes: [API_ERROR_CODES.FREELANCER_PROFILE_NOT_FOUND] },
   })
   getFilters(@Req() request: LocaleAwareRequest, @Param('profileId', ParseUUIDPipe) profileId: string) {
@@ -29,7 +29,7 @@ export class SearchFiltersController {
   @RequirePermissions(ORG.SEARCH_FILTERS_UPDATE)
   @ApiJwtProtectedRoute({
     summary: 'Save Apify search filters for a freelancer profile',
-    ok: { schema: { example: { filters: { query: 'nestjs', maxResults: 50 } } } },
+    ok: { schema: { example: { filters: { queries: ['nestjs developer'], item_limit: 50, job_posted: 48 } } } },
     validation: true,
     notFound: { codes: [API_ERROR_CODES.FREELANCER_PROFILE_NOT_FOUND] },
   })
@@ -45,7 +45,11 @@ export class SearchFiltersController {
   @RequirePermissions(ORG.SEARCH_FILTERS_UPDATE)
   @ApiJwtProtectedRoute({
     summary: 'Generate Apify filters from a freelancer profile via filter-ai',
-    ok: { schema: { example: { provenance: 'ai', filters: { query: 'react developer' } } } },
+    ok: {
+      schema: {
+        example: { provenance: 'ai', filters: { queries: ['react developer'], item_limit: 50, job_posted: 48 } },
+      },
+    },
     notFound: { codes: [API_ERROR_CODES.FREELANCER_PROFILE_NOT_FOUND] },
     badRequest: { codes: [API_ERROR_CODES.SEARCH_FILTERS_GENERATE_FAILED] },
   })

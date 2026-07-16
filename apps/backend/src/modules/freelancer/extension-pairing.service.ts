@@ -8,6 +8,7 @@ import { EXTENSION_PAIRING_CODE_ATTRS } from '../../database/attributes';
 import { ExtensionPairingCode } from '../../database/models/extension-pairing-code.model';
 import { AuthService } from '../auth/auth.service';
 import { OrgContextService } from './org-context.service';
+import { UpworkOverviewService } from './upwork-overview.service';
 
 const PAIRING_TTL_MS = 10 * 60 * 1000;
 
@@ -17,6 +18,7 @@ export class ExtensionPairingService {
     @InjectModel(ExtensionPairingCode) private readonly pairingModel: typeof ExtensionPairingCode,
     private readonly orgContext: OrgContextService,
     private readonly authService: AuthService,
+    private readonly upworkOverview: UpworkOverviewService,
   ) {}
 
   async createPairingCode(userId: string | undefined) {
@@ -73,6 +75,7 @@ export class ExtensionPairingService {
     }
 
     await row.update({ consumedAt: new Date() });
+    await this.upworkOverview.markOrgExtensionConnected(row.orgId);
 
     return this.authService.issueTokensForExtensionPairing({
       userId: row.userId,

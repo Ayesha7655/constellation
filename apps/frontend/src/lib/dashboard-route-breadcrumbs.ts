@@ -47,6 +47,26 @@ function dynamicRouteRules(config: DashboardNavConfig): readonly DynamicRouteRul
     ];
   }
 
+  if (base === '/dashboard') {
+    return [
+      {
+        pattern: new RegExp(`^${base}/upwork/profile/draft$`),
+        labelKey: 'org.pages.upworkProfileDraft.title',
+        ancestors: [{ href: `${base}/upwork/profile`, labelKey: 'org.nav.upworkProfile' }],
+      },
+      {
+        pattern: new RegExp(`^${base}/upwork/profile/[^/]+$`),
+        labelKey: 'org.pages.upworkProfileDetail.title',
+        ancestors: [{ href: `${base}/upwork/profile`, labelKey: 'org.nav.upworkProfile' }],
+      },
+      {
+        pattern: new RegExp(`^${base}/upwork/jobs/[^/]+$`),
+        labelKey: 'org.pages.upworkJobDetail.title',
+        ancestors: [{ href: `${base}/upwork/jobs`, labelKey: 'org.nav.upworkJobs' }],
+      },
+    ];
+  }
+
   return [];
 }
 

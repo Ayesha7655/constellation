@@ -128,8 +128,16 @@ export const API_ERROR_CODES = {
   FREELANCER_PROFILE_ORG_REQUIRED: 'api.freelancer_profile.org_required',
   SEARCH_FILTERS_NOT_FOUND: 'api.search_filters.not_found',
   SEARCH_FILTERS_GENERATE_FAILED: 'api.search_filters.generate_failed',
+  SEARCH_FILTERS_QUERIES_REQUIRED: 'api.search_filters.queries_required',
   EXTENSION_PAIRING_INVALID: 'api.extension.pairing_invalid',
   EXTENSION_PAIRING_EXPIRED: 'api.extension.pairing_expired',
+  SCRAPE_RUN_NOT_FOUND: 'api.scrape_run.not_found',
+  SCRAPE_RUN_ALREADY_ACTIVE: 'api.scrape_run.already_active',
+  SCRAPE_RUN_APIFY_FAILED: 'api.scrape_run.apify_failed',
+  SCRAPE_RUN_APIFY_NOT_CONFIGURED: 'api.scrape_run.apify_not_configured',
+  UPWORK_JOB_NOT_FOUND: 'api.upwork_job.not_found',
+  UPWORK_SCORING_WEIGHTS_INVALID: 'api.upwork_scoring.weights_invalid',
+  UPWORK_SCORING_THRESHOLDS_INVALID: 'api.upwork_scoring.thresholds_invalid',
 } as const;
 
 export type ApiErrorCode = (typeof API_ERROR_CODES)[keyof typeof API_ERROR_CODES];

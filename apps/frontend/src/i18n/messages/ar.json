@@ -3899,12 +3899,23 @@
         "upworkGroup": "Upwork",
         "upworkProfile": "ملف المستقل",
         "searchFilters": "عوامل البحث",
+        "upworkScoring": "إعدادات التقييم",
+        "upworkJobs": "نتائج الوظائف",
         "connectExtension": "ربط الإضافة"
       },
       "pages": {
         "overview": {
           "title": "لوحة تحكم المؤسسة",
           "description": "مرحباً بك في مساحة عمل مؤسستك."
+        },
+        "upworkProfileDetail": {
+          "title": "تفاصيل الملف"
+        },
+        "upworkProfileDraft": {
+          "title": "مسودة الاستيراد"
+        },
+        "upworkJobDetail": {
+          "title": "تفاصيل الوظيفة"
         }
       }
     }
@@ -5029,11 +5040,25 @@
       },
       "search_filters": {
         "not_found": "لا توجد عوامل بحث محفوظة بعد.",
-        "generate_failed": "تعذّر إنشاء عوامل البحث. حاول مرة أخرى."
+        "generate_failed": "تعذّر إنشاء عوامل البحث. حاول مرة أخرى.",
+        "queries_required": "أضف استعلام بحث واحداً على الأقل قبل تشغيل Apify."
       },
       "extension": {
         "pairing_invalid": "رمز الاقتران غير صالح.",
         "pairing_expired": "انتهت صلاحية رمز الاقتران. أنشئ رمزاً جديداً."
+      },
+      "scrape_run": {
+        "not_found": "لم يتم العثور على عملية الجمع هذه.",
+        "already_active": "هناك عملية جمع قيد التشغيل لهذا الملف بالفعل.",
+        "apify_failed": "فشل بحث Apify. تحقق من حالة التشغيل وحاول مرة أخرى.",
+        "apify_not_configured": "Apify غير مُعدّ. عيّن APIFY_TOKEN في الخادم."
+      },
+      "upwork_job": {
+        "not_found": "لم يتم العثور على هذه الوظيفة."
+      },
+      "upwork_scoring": {
+        "weights_invalid": "يجب أن تكون أوزان التقييم أعداداً صحيحة ومجموعها 100.",
+        "thresholds_invalid": "يجب أن تكون عتبات الألوان بين 0 و100 مع الأخضر > البرتقالي > الأصفر."
       },
       "seller_trust_badge": {
         "not_eligible": "حسابك غير مؤهل للتقديم على هذه الشارة.",
@@ -5574,18 +5599,38 @@
       "upworkGroup": "Upwork",
       "upworkProfile": "ملف المستقل",
       "searchFilters": "عوامل البحث",
+      "upworkScoring": "إعدادات التقييم",
+      "upworkJobs": "نتائج الوظائف",
       "connectExtension": "ربط الإضافة"
     },
     "pages": {
       "overview": {
         "title": "لوحة تحكم المؤسسة",
-        "description": "مرحباً بك في مساحة عمل مؤسستك."
+        "description": "اربط الإضافة، وأدر ملفات Upwork، وراجع أحدث الوظائف المطابقة.",
+        "freshTitle": "اربط إضافة Chrome",
+        "freshDescription": "اربط إضافة Constellation مرة واحدة، ثم زامن ملفات Upwork من المتصفح.",
+        "connectExtension": "ربط الإضافة",
+        "openExtension": "فتح صفحة الإضافة",
+        "syncTitle": "زامن ملف Upwork",
+        "syncDescription": "تم ربط الإضافة. افتح ملفك على Upwork في Chrome وزامن من نافذة الإضافة.",
+        "draftWaiting": "هناك استيراد ملف بانتظار المراجعة في صفحة الملفات.",
+        "profilesTitle": "ملفات المستقلين",
+        "profilesDescription": "الملفات المتزامنة لهذه المؤسسة.",
+        "goProfiles": "عرض كل الملفات",
+        "jobsTitle": "أحدث الوظائف",
+        "jobsDescription": "أحدث الفرص المقيّمة عبر ملفاتك.",
+        "goJobs": "عرض كل الوظائف",
+        "jobMeta": "الدرجة {score} · {budget}",
+        "budgetUnknown": "الميزانية غير متاحة",
+        "openJob": "فتح على Upwork",
+        "loadError": "تعذّر تحميل لوحة التحكم.",
+        "retry": "إعادة المحاولة"
       }
     },
     "upwork": {
       "profile": {
         "title": "ملفات المستقل على Upwork",
-        "description": "يمكن لمؤسستك حفظ عدة ملفات Upwork. لكل ملف عوامل بحث Apify خاصة به.",
+        "description": "يمكن لمؤسستك حفظ عدة ملفات Upwork. افتح بطاقة لتعديل التفاصيل.",
         "save": "حفظ الملف",
         "saved": "تم حفظ الملف.",
         "created": "تم إنشاء الملف.",
@@ -5593,7 +5638,7 @@
         "discarded": "تم تجاهل مسودة الاستيراد.",
         "generateHint": "احفظ ملفك ثم أنشئ عوامل البحث.",
         "pendingDraft": "استيراد معلّق من إضافة Chrome",
-        "pendingDraftHint": "راجع الملف المستخرج أدناه، ثم أكّد لإضافته كملف Upwork جديد لهذه المؤسسة.",
+        "pendingDraftHint": "راجع الملف المستخرج، ثم أكّده لإضافته كملف Upwork جديد.",
         "expiresAt": "ينتهي: {value}",
         "confirmImport": "تأكيد الاستيراد كملف جديد",
         "discardImport": "تجاهل",
@@ -5601,6 +5646,18 @@
         "selectProfile": "الملف النشط",
         "createProfile": "إضافة ملف فارغ",
         "deleteProfile": "حذف الملف",
+        "backToList": "العودة إلى الملفات",
+        "detailTitle": "تفاصيل الملف",
+        "detailDescription": "عدّل هذا الملف. يبقى المصدر كما هو بعد الحفظ.",
+        "loadError": "تعذّر تحميل هذا الملف. حاول مرة أخرى.",
+        "retry": "إعادة المحاولة",
+        "noDraft": "لا توجد مسودة استيراد معلّقة حالياً.",
+        "draftBadge": "مسودة واردة",
+        "noTitle": "لا يوجد عنوان بعد",
+        "source": {
+          "manual": "يدوي",
+          "extension": "إضافة"
+        },
         "newProfileLabel": "ملف جديد",
         "unnamedProfile": "ملف بلا عنوان",
         "noProfiles": "لا توجد ملفات بعد",
@@ -5624,7 +5681,7 @@
       },
       "filters": {
         "title": "عوامل بحث Apify",
-        "description": "العوامل المرسلة إلى blackfalcondata/upwork-scraper. اختر ملفاً، أنشئ منه، ثم عدّل حسب الحاجة.",
+        "description": "العوامل المرسلة إلى getdataforme/upwork-actor (XYTgO05GT5qAoSlxy). اختر ملفاً، أنشئ منه، ثم عدّل حسب الحاجة.",
         "selectProfile": "الملف",
         "generate": "إنشاء بالذكاء الاصطناعي",
         "generating": "جاري الإنشاء…",
@@ -5636,6 +5693,121 @@
         "provenance": "المصدر: {value}",
         "needProfile": "أنشئ أو استورد ملف مستقل قبل إدارة العوامل.",
         "invalidJson": "JSON غير صالح"
+      },
+      "scoring": {
+        "title": "تقييم الصلة",
+        "description": "تحكّم في أوزان مطابقة الوظائف وألوان الدرجات في قائمة الوظائف.",
+        "weightsTitle": "أوزان الإشارات",
+        "weightsHint": "يجب أن يكون مجموع الأوزان 100. المجموع الحالي: {sum}.",
+        "thresholdsTitle": "ألوان الدرجة",
+        "thresholdsHint": "أخضر ≥ عتبة الأخضر، برتقالي ≥ البرتقالي، أصفر ≥ الأصفر، وإلا أحمر. يجب أن تتناقص العتبات بهذا الترتيب.",
+        "rescoreHint": "تُحدَّث درجات الوظائف الحالية عند التشغيل التالي لكل ملف.",
+        "save": "حفظ التقييم",
+        "saved": "تم حفظ إعدادات التقييم.",
+        "resetDefaults": "إعادة التعيين للافتراضي",
+        "reset": "أُعيدت إعدادات التقييم إلى القيم الافتراضية.",
+        "weights": {
+          "skills": "تداخل المهارات",
+          "keywords": "كلمات العنوان / النبذة",
+          "budget": "ملاءمة الميزانية / الأجر",
+          "location": "موقع العميل مقابل بلد الملف",
+          "clientRating": "تقييم العميل",
+          "proposals": "منافسة أقل (العروض)"
+        },
+        "thresholds": {
+          "green": "أخضر من",
+          "orange": "برتقالي من",
+          "yellow": "أصفر من"
+        },
+        "validation": {
+          "required": "مطلوب",
+          "range": "أدخل عدداً صحيحاً من 0 إلى 100",
+          "weightsSum": "يجب أن يكون مجموع الأوزان 100",
+          "thresholdsOrder": "يجب أن يكون الأخضر أكبر من البرتقالي، والبرتقالي أكبر من الأصفر"
+        }
+      },
+      "jobs": {
+        "title": "نتائج وظائف Upwork",
+        "description": "شغّل بحث Apify لملف، ثم راجع الوظائف المقيّمة لهذا الملف.",
+        "selectProfile": "الملف",
+        "runNow": "تشغيل الآن",
+        "running": "جارٍ التشغيل…",
+        "runStarted": "بدأ البحث.",
+        "needProfile": "أنشئ أو استورد ملف مستقل قبل تشغيل البحث.",
+        "latestRun": "آخر تشغيل",
+        "runCounts": "تم جلب {fetched} · تم استبعاد {filtered} · تم حفظ {saved} · جديد {newCount}",
+        "search": "بحث",
+        "searchPlaceholder": "ابحث في العناوين…",
+        "filters": "فلاتر",
+        "filtersActive": "فلاتر مفعّلة",
+        "filtersTitle": "فلاتر الوظائف",
+        "filtersDescription": "الدرجة والترتيب ونطاق التاريخ والوظائف الجديدة لكل تشغيل.",
+        "minScore": "الحد الأدنى للدرجة",
+        "sort": "ترتيب",
+        "sortScore": "الدرجة",
+        "sortDate": "التاريخ",
+        "scrapedFrom": "من تاريخ",
+        "scrapedTo": "إلى تاريخ",
+        "applyFilters": "تطبيق",
+        "clearFilters": "مسح",
+        "runHistory": "التشغيلات الأخيرة",
+        "showNewFromRun": "عرض {count} وظائف جديدة",
+        "loadError": "تعذّر تحميل الوظائف. حاول مرة أخرى.",
+        "retry": "إعادة المحاولة",
+        "detailTitle": "تفاصيل الوظيفة",
+        "detailDescription": "تطابق مقيّم لملف المستقل المحدد.",
+        "backToList": "العودة إلى الوظائف",
+        "missingProfile": "افتح هذه الوظيفة من قائمة الوظائف لتضمين سياق الملف.",
+        "detail": {
+          "budget": "الميزانية",
+          "clientLocation": "موقع العميل",
+          "posted": "تاريخ النشر",
+          "scrapedAt": "تاريخ الجلب",
+          "skills": "المهارات",
+          "description": "الوصف",
+          "noDescription": "لا يوجد وصف متاح.",
+          "clientRating": "تقييم العميل",
+          "clientSpent": "إنفاق العميل",
+          "proposals": "العروض",
+          "match": "التطابق",
+          "relevancyScore": "درجة الصلة",
+          "aboutJob": "عن الوظيفة",
+          "jobType": "نوع الوظيفة",
+          "experienceLevel": "مستوى الخبرة",
+          "aboutClient": "عن العميل",
+          "activity": "النشاط"
+        },
+        "breakdown": {
+          "skills": "المهارات",
+          "keywords": "الكلمات المفتاحية",
+          "budget": "الميزانية",
+          "location": "الموقع",
+          "clientRating": "تقييم العميل",
+          "proposals": "العروض"
+        },
+        "status": {
+          "queued": "في الانتظار",
+          "running": "جارٍ التشغيل",
+          "succeeded": "نجح",
+          "failed": "فشل"
+        },
+        "table": {
+          "title": "الوظيفة",
+          "details": "الدرجة",
+          "budget": "الميزانية",
+          "posted": "تاريخ النشر",
+          "actions": "إجراءات",
+          "score": "{score}",
+          "new": "جديد",
+          "budgetUnknown": "الميزانية غير متاحة",
+          "openJob": "فتح على Upwork",
+          "empty": "لا توجد وظائف مقيّمة لهذا الملف بعد. احفظ العوامل ثم شغّل الآن."
+        },
+        "pagination": {
+          "previous": "السابق",
+          "next": "التالي",
+          "pageOf": "صفحة {page} من {totalPages}"
+        }
       },
       "extension": {
         "title": "ربط إضافة Chrome",

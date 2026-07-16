@@ -1,5 +1,5 @@
-import { UpworkProfileView } from '@/components/org/upwork-profile-view';
+import { UpworkProfileListView } from '@/components/org/upwork-profile-list-view';
 
 export default function UpworkProfilePage() {
-  return <UpworkProfileView />;
+  return <UpworkProfileListView />;
 }

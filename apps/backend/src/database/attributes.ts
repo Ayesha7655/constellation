@@ -138,3 +138,59 @@ export const EXTENSION_PAIRING_CODE_ATTRS = [
   'expiresAt',
   'consumedAt',
 ] as const;
+
+export const SCRAPE_RUN_ATTRS = [
+  'id',
+  'orgId',
+  'freelancerProfileId',
+  'status',
+  'trigger',
+  'actorId',
+  'apifyRunId',
+  'filtersSnapshot',
+  'error',
+  'totalFetched',
+  'totalFiltered',
+  'totalSaved',
+  'totalNew',
+  'startedAt',
+  'finishedAt',
+  'createdAt',
+  'updatedAt',
+] as const;
+
+export const UPWORK_JOB_ATTRS = [
+  'id',
+  'orgId',
+  'externalJobId',
+  'jobUrl',
+  'title',
+  'description',
+  'budget',
+  'jobType',
+  'experienceLevel',
+  'clientLocation',
+  'clientRating',
+  'clientSpent',
+  'skills',
+  'proposals',
+  'postedTime',
+  'postedAt',
+  'scrapeRunId',
+  'scrapedAt',
+  'createdAt',
+  'updatedAt',
+] as const;
+
+export const SCRAPE_RUN_JOB_ATTRS = [
+  'id',
+  'orgId',
+  'scrapeRunId',
+  'upworkJobId',
+  'freelancerProfileId',
+  'isNew',
+  'createdAt',
+] as const;
+
+export const ORG_EXTENSION_ATTRS = ['id', 'extensionConnectedAt'] as const;
+export const ORG_SCORING_ATTRS = ['id', 'upworkScoringConfig'] as const;

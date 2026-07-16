@@ -8,7 +8,7 @@ import { AdminPageLayout } from '@/components/layout/admin-page-layout';
 import { getAccessToken, getRefreshToken } from '@/lib/auth-session';
 import { showUserErrorToast, showUserSuccessToast } from '@/i18n/translate-user-message';
 import { translateAuthRequestError } from '@/lib/user-messages';
-import { createExtensionPairingCode } from '@/services/freelancer-api';
+import { createExtensionPairingCode, markExtensionConnected } from '@/services/freelancer-api';
 
 const DEFAULT_EXTENSION_ID = 'binnbooceccibooedcfekgeackgnkodh';
 
@@ -88,6 +88,9 @@ export function UpworkExtensionView() {
         }
         const ok = typeof response === 'object' && response !== null && 'ok' in response && (response as { ok: unknown }).ok === true;
         if (ok) {
+          void markExtensionConnected().catch(() => {
+            /* best effort */
+          });
           showUserSuccessToast(t('oneClickSuccess'));
         } else {
           showUserErrorToast(t('oneClickMissing'));
@@ -125,11 +128,6 @@ export function UpworkExtensionView() {
             {t('copyCode')}
           </Button>
         </FormActions>
-      </section>
-
-      <section className="space-y-2 rounded-lg border border-border bg-card p-4">
-        <h2 className="text-base font-semibold text-foreground">{t('installTitle')}</h2>
-        <p className="text-sm text-muted-foreground">{t('installSteps')}</p>
       </section>
     </AdminPageLayout>
   );

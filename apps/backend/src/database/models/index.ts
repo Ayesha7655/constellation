@@ -10,3 +10,6 @@ export { FreelancerProfile } from './freelancer-profile.model';
 export { ProfileImportDraft } from './profile-import-draft.model';
 export { SearchFilterSet } from './search-filter-set.model';
 export { ExtensionPairingCode } from './extension-pairing-code.model';
+export { ScrapeRun } from './scrape-run.model';
+export { UpworkJob } from './upwork-job.model';
+export { ScrapeRunJob } from './scrape-run-job.model';

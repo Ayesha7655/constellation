@@ -30,23 +30,20 @@ export type DashboardNavConfig = Readonly<{
 
 export function isDashboardNavGroupExpandedByDefault(
   _dashboard: DashboardNavConfig['dashboard'],
-  group: DashboardNavGroup,
-  groupKey: string,
-  activeGroupKey: string | null,
+  _group: DashboardNavGroup,
+  _groupKey: string,
+  _activeGroupKey: string | null,
 ): boolean {
-  if (!group.labelKey) {
-    return true;
-  }
-  return groupKey === activeGroupKey;
+  return true;
 }
 
 export function isDashboardNavSubGroupExpandedByDefault(
   _dashboard: DashboardNavConfig['dashboard'],
   _parentGroup: DashboardNavGroup,
-  subGroupKey: string,
-  activeSubGroupKeys: ReadonlySet<string>,
+  _subGroupKey: string,
+  _activeSubGroupKeys: ReadonlySet<string>,
 ): boolean {
-  return activeSubGroupKeys.has(subGroupKey);
+  return true;
 }
 
 export const adminDashboardNav: DashboardNavConfig = {
@@ -111,16 +108,16 @@ export const orgDashboardNav: DashboardNavConfig = {
       labelKey: 'org.nav.upworkGroup',
       items: [
         {
-          href: `${DASHBOARD_BASE_PATH.org}/upwork/profile`,
-          labelKey: 'org.nav.upworkProfile',
-          iconKey: 'briefcase',
-          permissionKey: ORG.FREELANCER_PROFILE_READ,
-        },
-        {
           href: `${DASHBOARD_BASE_PATH.org}/upwork/filters`,
           labelKey: 'org.nav.searchFilters',
           iconKey: 'slidersHorizontal',
           permissionKey: ORG.SEARCH_FILTERS_READ,
+        },
+        {
+          href: `${DASHBOARD_BASE_PATH.org}/upwork/jobs`,
+          labelKey: 'org.nav.upworkJobs',
+          iconKey: 'list',
+          permissionKey: ORG.UPWORK_JOBS_READ,
         },
         {
           href: `${DASHBOARD_BASE_PATH.org}/upwork/extension`,
@@ -137,6 +134,18 @@ export const orgDashboardNav: DashboardNavConfig = {
           href: `${DASHBOARD_BASE_PATH.org}/profile`,
           labelKey: 'org.nav.profile',
           iconKey: 'user',
+        },
+        {
+          href: `${DASHBOARD_BASE_PATH.org}/upwork/profile`,
+          labelKey: 'org.nav.upworkProfile',
+          iconKey: 'briefcase',
+          permissionKey: ORG.FREELANCER_PROFILE_READ,
+        },
+        {
+          href: `${DASHBOARD_BASE_PATH.org}/upwork/scoring`,
+          labelKey: 'org.nav.upworkScoring',
+          iconKey: 'target',
+          permissionKey: ORG.UPWORK_SCORING_READ,
         },
       ],
     },

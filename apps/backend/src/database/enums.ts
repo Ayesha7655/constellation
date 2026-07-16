@@ -26,3 +26,15 @@ export enum SearchFilterProvenance {
   AI = 'ai',
   MANUAL = 'manual',
 }
+
+export enum ScrapeRunStatus {
+  QUEUED = 'queued',
+  RUNNING = 'running',
+  SUCCEEDED = 'succeeded',
+  FAILED = 'failed',
+}
+
+export enum ScrapeRunTrigger {
+  MANUAL = 'manual',
+  SCHEDULE = 'schedule',
+}

@@ -28,9 +28,11 @@ export function UpworkFiltersView() {
   const canUpdate = permissions.some((p) => p.key === ORG.SEARCH_FILTERS_UPDATE);
   const [profiles, setProfiles] = useState<FreelancerProfileDto[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [actorId, setActorId] = useState('blackfalcondata/upwork-scraper');
+  const [actorId, setActorId] = useState('XYTgO05GT5qAoSlxy');
   const [provenance, setProvenance] = useState<string | null>(null);
-  const [jsonText, setJsonText] = useState('{\n  "query": "",\n  "maxResults": 50,\n  "sort": "recency"\n}');
+  const [jsonText, setJsonText] = useState(
+    '{\n  "queries": [],\n  "item_limit": 50,\n  "job_posted": 48,\n  "proxyConfiguration": {\n    "useApifyProxy": true,\n    "apifyProxyGroups": ["RESIDENTIAL"],\n    "apifyProxyCountry": "US"\n  }\n}',
+  );
   const [ready, setReady] = useState(false);
   const [busy, setBusy] = useState(false);
 
@@ -41,7 +43,7 @@ export function UpworkFiltersView() {
     setJsonText(
       result.filters
         ? JSON.stringify(result.filters, null, 2)
-        : '{\n  "query": "",\n  "maxResults": 50,\n  "sort": "recency"\n}',
+        : '{\n  "queries": [],\n  "item_limit": 50,\n  "job_posted": 48,\n  "proxyConfiguration": {\n    "useApifyProxy": true,\n    "apifyProxyGroups": ["RESIDENTIAL"],\n    "apifyProxyCountry": "US"\n  }\n}',
     );
   }, []);
 

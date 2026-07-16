@@ -1,4 +1,8 @@
-import type { UpworkApifySearchFilters, UpworkFilterGenerationProfile } from '@constellation/shared';
+import {
+  DEFAULT_UPWORK_APIFY_FILTERS,
+  type UpworkApifySearchFilters,
+  type UpworkFilterGenerationProfile,
+} from '@constellation/shared';
 
 function uniqueTerms(values: string[]): string[] {
   const seen = new Set<string>();
@@ -10,30 +14,23 @@ function uniqueTerms(values: string[]): string[] {
   });
 }
 
-function buildHourlyRate(profile: UpworkFilterGenerationProfile): string | undefined {
-  if (profile.hourlyRateMin != null && profile.hourlyRateMax != null) {
-    return `${profile.hourlyRateMin}-${profile.hourlyRateMax}`;
-  }
-  if (profile.hourlyRateMin != null) {
-    return `${profile.hourlyRateMin}-`;
-  }
-  return undefined;
-}
-
 export function buildFallbackFilters(profile: UpworkFilterGenerationProfile): UpworkApifySearchFilters {
   const titleTerms = profile.title?.split(/\s+/).filter(Boolean).slice(0, 4) ?? [];
   const excluded = new Set(profile.exclusions.map((term) => term.toLocaleLowerCase()));
-  const queryTerms = uniqueTerms([...profile.skills.slice(0, 5), ...titleTerms]).filter(
+  const skillQueries = uniqueTerms(profile.skills.slice(0, 8)).filter(
     (term) => !excluded.has(term.toLocaleLowerCase()),
   );
-  const hourlyRate = buildHourlyRate(profile);
+  const titleQuery = uniqueTerms(titleTerms).join(' ').trim();
+
+  const queries = uniqueTerms([
+    ...skillQueries.map((skill) => `${skill} developer`),
+    ...(titleQuery ? [titleQuery] : []),
+  ]).slice(0, 12);
 
   return {
-    query: queryTerms.join(' ') || 'software developer',
-    sort: 'recency',
-    jobType: 'any',
-    verifiedPaymentOnly: true,
-    maxResults: 50,
-    ...(hourlyRate ? { hourlyRate } : {}),
+    queries: queries.length > 0 ? queries : ['software developer'],
+    item_limit: DEFAULT_UPWORK_APIFY_FILTERS.item_limit,
+    job_posted: DEFAULT_UPWORK_APIFY_FILTERS.job_posted,
+    proxyConfiguration: DEFAULT_UPWORK_APIFY_FILTERS.proxyConfiguration,
   };
 }

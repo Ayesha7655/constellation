@@ -15,6 +15,9 @@ import {
   ProfileImportDraft,
   SearchFilterSet,
   ExtensionPairingCode,
+  ScrapeRun,
+  UpworkJob,
+  ScrapeRunJob,
 } from './models';
 
 const models = [
@@ -30,6 +33,9 @@ const models = [
   ProfileImportDraft,
   SearchFilterSet,
   ExtensionPairingCode,
+  ScrapeRun,
+  UpworkJob,
+  ScrapeRunJob,
 ];
 
 @Global()
