@@ -38,7 +38,16 @@ export class ApifyClient {
 
   async startActorRun(actorId: string, input: Record<string, unknown>): Promise<{ runId: string }> {
     const token = this.requireToken();
+    if (!actorId?.trim()) {
+      this.logger.warn('Apify startActorRun called without actorId');
+      throw codedBadRequest(API_ERROR_CODES.SCRAPE_RUN_APIFY_FAILED);
+    }
     const encodedActorId = encodeURIComponent(actorId);
+    if (this.debugEnabled()) {
+      this.logger.debug(
+        `Starting Apify actor ${actorId} with input keys=${Object.keys(input).join(',')}`,
+      );
+    }
     const response = await this.fetchJson<ApifyRunResponse>(
       `https://api.apify.com/v2/acts/${encodedActorId}/runs?token=${encodeURIComponent(token)}`,
       {
@@ -50,6 +59,9 @@ export class ApifyClient {
 
     const runId = response.data?.id;
     if (!runId) {
+      if (this.debugEnabled()) {
+        this.logger.debug(`Apify start response missing run id: ${JSON.stringify(response).slice(0, 500)}`);
+      }
       throw codedBadRequest(API_ERROR_CODES.SCRAPE_RUN_APIFY_FAILED);
     }
     return { runId };
@@ -92,25 +104,49 @@ export class ApifyClient {
 
   async listDatasetItems(datasetId: string): Promise<unknown[]> {
     const token = this.requireToken();
+    if (!datasetId?.trim()) {
+      this.logger.warn('Apify listDatasetItems called without datasetId');
+      throw codedBadRequest(API_ERROR_CODES.SCRAPE_RUN_APIFY_FAILED);
+    }
     const items: unknown[] = [];
     let offset = 0;
     const limit = 250;
 
     for (;;) {
-      const batch = await this.fetchJson<unknown[]>(
+      const batch = await this.fetchJson<unknown>(
         `https://api.apify.com/v2/datasets/${encodeURIComponent(datasetId)}/items?token=${encodeURIComponent(token)}&clean=true&format=json&offset=${offset}&limit=${limit}`,
       );
-      if (!Array.isArray(batch) || batch.length === 0) {
+      const rows = Array.isArray(batch)
+        ? batch
+        : batch &&
+            typeof batch === 'object' &&
+            Array.isArray((batch as { data?: unknown }).data)
+          ? ((batch as { data: unknown[] }).data)
+          : null;
+
+      if (!rows || rows.length === 0) {
+        if (this.debugEnabled() && offset === 0 && batch != null && !Array.isArray(batch)) {
+          this.logger.debug(
+            `Unexpected Apify dataset payload shape: ${JSON.stringify(batch).slice(0, 400)}`,
+          );
+        }
         break;
       }
-      items.push(...batch);
-      if (batch.length < limit) {
+      items.push(...rows);
+      if (rows.length < limit) {
         break;
       }
       offset += limit;
     }
 
+    if (this.debugEnabled()) {
+      this.logger.debug(`Apify dataset ${datasetId} fetched ${items.length} item(s)`);
+    }
     return items;
+  }
+
+  private debugEnabled(): boolean {
+    return this.configService.get<string>('NODE_ENV') !== 'production';
   }
 
   private getTimeoutMs(): number {

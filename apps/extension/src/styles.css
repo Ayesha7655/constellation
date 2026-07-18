@@ -91,7 +91,6 @@ a {
   box-shadow: 0 0 0 3px rgb(59 130 246 / 20%);
 }
 
-.brand-mark,
 .hero-icon,
 .field-icon,
 .profile-icon {
@@ -104,9 +103,22 @@ a {
 }
 
 .brand-mark {
+  display: grid;
+  flex: 0 0 auto;
+  place-items: center;
   width: 36px;
   height: 36px;
   border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  background: #000;
+}
+
+.brand-mark-image {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .brand-name,

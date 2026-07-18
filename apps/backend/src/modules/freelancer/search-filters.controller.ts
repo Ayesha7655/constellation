@@ -29,7 +29,7 @@ export class SearchFiltersController {
   @RequirePermissions(ORG.SEARCH_FILTERS_UPDATE)
   @ApiJwtProtectedRoute({
     summary: 'Save Apify search filters for a freelancer profile',
-    ok: { schema: { example: { filters: { queries: ['nestjs developer'], item_limit: 50, job_posted: 48 } } } },
+    ok: { schema: { example: { filters: { queries: ['nestjs developer'], item_limit: 100, job_posted: 48 } } } },
     validation: true,
     notFound: { codes: [API_ERROR_CODES.FREELANCER_PROFILE_NOT_FOUND] },
   })
@@ -47,7 +47,7 @@ export class SearchFiltersController {
     summary: 'Generate Apify filters from a freelancer profile via filter-ai',
     ok: {
       schema: {
-        example: { provenance: 'ai', filters: { queries: ['react developer'], item_limit: 50, job_posted: 48 } },
+        example: { provenance: 'ai', filters: { queries: ['react developer'], item_limit: 100, job_posted: 48 } },
       },
     },
     notFound: { codes: [API_ERROR_CODES.FREELANCER_PROFILE_NOT_FOUND] },

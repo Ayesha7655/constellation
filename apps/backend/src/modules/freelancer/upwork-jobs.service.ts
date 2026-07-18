@@ -13,7 +13,9 @@ import { FreelancerProfile } from '../../database/models/freelancer-profile.mode
 import { ScrapeRunJob } from '../../database/models/scrape-run-job.model';
 import { UpworkJob } from '../../database/models/upwork-job.model';
 import { OrgContextService } from './org-context.service';
+import { resolveJobSkillLabels } from './ingest/map-apify-job';
 import {
+  classifyJobSkillsAgainstProfile,
   scoreJobAgainstProfile,
   type ScoreableJob,
   type ScoreableProfile,
@@ -171,11 +173,10 @@ export class UpworkJobsService {
       throw codedNotFound(API_ERROR_CODES.UPWORK_JOB_NOT_FOUND);
     }
 
-    const { score, breakdown } = scoreJobAgainstProfile(
-      this.toScoreableProfile(profile),
-      this.toScoreableJob(row.upworkJob),
-      scoring,
-    );
+    const scoreableProfile = this.toScoreableProfile(profile);
+    const scoreableJob = this.toScoreableJob(row.upworkJob);
+    const { score, breakdown } = scoreJobAgainstProfile(scoreableProfile, scoreableJob, scoring);
+    const skillMatches = classifyJobSkillsAgainstProfile(scoreableProfile, scoreableJob.skills);
 
     return {
       ...this.toJobItem(row.upworkJob, score, row.createdAt, profileId, {
@@ -184,6 +185,7 @@ export class UpworkJobsService {
       }),
       scoringThresholds: scoring.thresholds,
       scoreBreakdown: breakdown,
+      skillMatches,
     };
   }
 
@@ -215,7 +217,7 @@ export class UpworkJobsService {
     return {
       title: job.title,
       description: job.description,
-      skills: job.skills,
+      skills: resolveJobSkillLabels(job),
       budget: job.budget,
       jobType: job.jobType,
       clientLocation: job.clientLocation,
@@ -244,7 +246,7 @@ export class UpworkJobsService {
       clientLocation: job.clientLocation,
       clientRating: job.clientRating,
       clientSpent: job.clientSpent,
-      skills: job.skills,
+      skills: resolveJobSkillLabels(job),
       proposals: job.proposals,
       postedTime: job.postedTime,
       postedAt: job.postedAt?.toISOString() ?? null,

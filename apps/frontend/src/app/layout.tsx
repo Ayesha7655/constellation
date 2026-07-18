@@ -27,6 +27,10 @@ const fontMono = JetBrains_Mono({
 export const metadata: Metadata = {
   title: 'Constellation',
   description: 'Constellation organization platform',
+  icons: {
+    icon: [{ url: '/logo.png', type: 'image/png' }],
+    apple: [{ url: '/logo.png', type: 'image/png' }],
+  },
 };
 
 type RootLayoutProps = Readonly<{

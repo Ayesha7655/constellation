@@ -14,6 +14,7 @@ import { ScrapeRunJob } from '../../database/models/scrape-run-job.model';
 import { UpworkJob } from '../../database/models/upwork-job.model';
 import { OrgContextService } from './org-context.service';
 import { scoreJobAgainstProfile } from './scoring/score-job-against-profile';
+import { resolveJobSkillLabels } from './ingest/map-apify-job';
 import { UpworkScoringService } from './upwork-scoring.service';
 
 @Injectable()
@@ -99,7 +100,7 @@ export class UpworkOverviewService {
         {
           title: row.upworkJob.title,
           description: row.upworkJob.description,
-          skills: row.upworkJob.skills,
+          skills: resolveJobSkillLabels(row.upworkJob),
           budget: row.upworkJob.budget,
           jobType: row.upworkJob.jobType,
           clientLocation: row.upworkJob.clientLocation,

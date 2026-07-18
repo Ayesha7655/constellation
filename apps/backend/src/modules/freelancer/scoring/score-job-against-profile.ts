@@ -1,4 +1,5 @@
 import {
+  canonicalizeUpworkLocation,
   resolveUpworkScoringConfig,
   sumUpworkScoringWeights,
   UPWORK_SCORING_WEIGHT_KEYS,
@@ -60,6 +61,11 @@ function uniqueNormalized(values: readonly string[]): string[] {
   return result;
 }
 
+/** Collapse punctuation so "Next.js" / "nextjs" / "OpenAI" match more reliably. */
+function compactSkill(value: string): string {
+  return value.toLocaleLowerCase().replace(/[^a-z0-9+#]/g, '');
+}
+
 function parseBudgetNumbers(budget: string | null): number[] {
   if (!budget) return [];
   const matches = budget.match(/\d+(?:\.\d+)?/g);
@@ -69,16 +75,53 @@ function parseBudgetNumbers(budget: string | null): number[] {
     .filter((value) => Number.isFinite(value) && value > 0);
 }
 
-function skillOverlapScore(profile: ScoreableProfile, job: ScoreableJob): number {
+function isFixedPriceJob(jobType: string | null): boolean {
+  if (!jobType) return false;
+  return /fixed/i.test(jobType);
+}
+
+export type JobSkillMatch = Readonly<{
+  skill: string;
+  matched: boolean;
+}>;
+
+/**
+ * For each job-required skill/tag, whether the freelancer profile covers it
+ * (skills list + title/overview text, with light fuzzy matching).
+ */
+export function classifyJobSkillsAgainstProfile(
+  profile: ScoreableProfile,
+  jobSkills: readonly string[],
+): JobSkillMatch[] {
   const profileSkills = uniqueNormalized(profile.skills);
-  if (profileSkills.length === 0) return 0.5;
-  const jobSkills = uniqueNormalized(job.skills);
-  const jobText = `${job.title} ${job.description}`.toLocaleLowerCase();
-  const overlap = profileSkills.filter((skill) => {
-    if (jobSkills.includes(skill)) return true;
-    return jobText.includes(skill);
-  }).length;
-  return overlap / profileSkills.length;
+  const profileCompacts = new Set(profileSkills.map(compactSkill));
+  const profileText = `${profile.title ?? ''} ${profile.overview ?? ''} ${profile.skills.join(' ')}`.toLocaleLowerCase();
+  const profileTextCompact = compactSkill(profileText);
+
+  return jobSkills.map((skill) => {
+    const normalized = skill.toLocaleLowerCase().trim();
+    const compact = compactSkill(skill);
+    const matched =
+      Boolean(normalized) &&
+      (profileSkills.includes(normalized) ||
+        profileSkills.some((ps) => ps.includes(normalized) || normalized.includes(ps)) ||
+        (compact.length >= 3 && profileCompacts.has(compact)) ||
+        profileText.includes(normalized) ||
+        (compact.length >= 3 && profileTextCompact.includes(compact)));
+    return { skill, matched };
+  });
+}
+
+function skillOverlapScore(profile: ScoreableProfile, job: ScoreableJob): number {
+  const jobSkills = job.skills.map((skill) => skill.trim()).filter(Boolean);
+  // No job skill tags → neutral (don't punish either side).
+  if (jobSkills.length === 0) return 0.5;
+
+  // Score = share of *job-required* skills the profile covers (same direction as the detail UI).
+  // A broad profile must not be punished for listing many skills the job never asked for.
+  const matches = classifyJobSkillsAgainstProfile(profile, jobSkills);
+  const covered = matches.filter((item) => item.matched).length;
+  return covered / matches.length;
 }
 
 function keywordScore(profile: ScoreableProfile, job: ScoreableJob): number {
@@ -92,11 +135,24 @@ function keywordScore(profile: ScoreableProfile, job: ScoreableJob): number {
   return hits / titleTokens.length;
 }
 
+/**
+ * Hourly budgets compare to profile hourly range.
+ * Fixed-price totals are NOT hourly rates — use soft bands so a $10 fixed job does not look like "$10/hr".
+ */
 function budgetFitScore(profile: ScoreableProfile, job: ScoreableJob): number {
   const amounts = parseBudgetNumbers(job.budget);
   const min = profile.hourlyRateMin;
   const max = profile.hourlyRateMax;
   if (amounts.length === 0 || (min == null && max == null)) return 0.5;
+
+  if (isFixedPriceJob(job.jobType)) {
+    const total = amounts[amounts.length - 1] ?? amounts[0] ?? 0;
+    const referenceHourly = max ?? min ?? 50;
+    if (total < referenceHourly) return 0.2;
+    if (total < referenceHourly * 4) return 0.45;
+    if (total < referenceHourly * 20) return 0.7;
+    return 0.9;
+  }
 
   const jobRate = amounts[0] ?? 0;
   if (min != null && max != null) {
@@ -114,12 +170,13 @@ function budgetFitScore(profile: ScoreableProfile, job: ScoreableJob): number {
 }
 
 function locationScore(profile: ScoreableProfile, job: ScoreableJob): number {
-  const country = profile.country?.trim().toLocaleLowerCase();
-  const location = job.clientLocation?.trim().toLocaleLowerCase();
-  if (!country || !location) return 0.5;
-  if (location.includes(country) || country.includes(location)) return 1;
-  const countryTokens = tokenize(country);
-  if (countryTokens.some((token) => location.includes(token))) return 0.85;
+  const profileCountry = canonicalizeUpworkLocation(profile.country);
+  const jobLocation = canonicalizeUpworkLocation(job.clientLocation);
+  if (!profileCountry || !jobLocation) return 0.5;
+  if (profileCountry === jobLocation) return 1;
+  if (jobLocation.includes(profileCountry) || profileCountry.includes(jobLocation)) return 0.9;
+  const countryTokens = tokenize(profileCountry);
+  if (countryTokens.some((token) => jobLocation.includes(token))) return 0.85;
   return 0.2;
 }
 
@@ -172,7 +229,7 @@ export function scoreJobAgainstProfile(
   configInput?: UpworkScoringConfig | unknown,
 ): ScoreResult {
   const config = resolveUpworkScoringConfig(configInput ?? null);
-  const jobText = `${job.title} ${job.description}`.toLocaleLowerCase();
+  const jobText = `${job.title} ${job.description} ${job.skills.join(' ')}`.toLocaleLowerCase();
   const exclusions = uniqueNormalized(profile.exclusions);
   if (exclusions.some((term) => jobText.includes(term))) {
     return {

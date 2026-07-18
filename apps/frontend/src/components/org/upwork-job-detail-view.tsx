@@ -32,6 +32,7 @@ import {
   type UpworkJobDto,
   type UpworkScoreBreakdownPartDto,
   type UpworkScoringConfigDto,
+  type UpworkSkillMatchDto,
 } from '@/services/freelancer-api';
 
 const JOBS_BASE = `${DASHBOARD_BASE_PATH.org}/upwork/jobs`;
@@ -44,6 +45,7 @@ type LoadState =
       job: UpworkJobDto;
       thresholds: UpworkScoringConfigDto['thresholds'];
       scoreBreakdown: readonly UpworkScoreBreakdownPartDto[];
+      skillMatches: readonly UpworkSkillMatchDto[];
     }>;
 
 type UpworkJobDetailViewProps = Readonly<{
@@ -120,6 +122,7 @@ export function UpworkJobDetailView({ profileId, jobId }: UpworkJobDetailViewPro
   const thresholds =
     loadState.status === 'ready' ? loadState.thresholds : DEFAULT_UPWORK_SCORING_THRESHOLDS;
   const scoreBreakdown = loadState.status === 'ready' ? loadState.scoreBreakdown : [];
+  const skillMatches = loadState.status === 'ready' ? loadState.skillMatches : [];
   const jobsListHref = JOBS_BASE;
 
   const breadcrumbs = useMemo((): readonly BreadcrumbItem[] => {
@@ -142,12 +145,18 @@ export function UpworkJobDetailView({ profileId, jobId }: UpworkJobDetailViewPro
     setLoadState({ status: 'loading' });
     try {
       const result = await getUpworkJob(profileId, jobId);
-      const { scoringThresholds, scoreBreakdown: breakdown, ...nextJob } = result;
+      const {
+        scoringThresholds,
+        scoreBreakdown: breakdown,
+        skillMatches: matches,
+        ...nextJob
+      } = result;
       setLoadState({
         status: 'ready',
         job: nextJob,
         thresholds: scoringThresholds,
         scoreBreakdown: breakdown,
+        skillMatches: matches,
       });
     } catch (error) {
       setLoadState({ status: 'error' });
@@ -164,12 +173,18 @@ export function UpworkJobDetailView({ profileId, jobId }: UpworkJobDetailViewPro
     setRefreshing(true);
     try {
       const result = await getUpworkJob(profileId, jobId);
-      const { scoringThresholds, scoreBreakdown: breakdown, ...nextJob } = result;
+      const {
+        scoringThresholds,
+        scoreBreakdown: breakdown,
+        skillMatches: matches,
+        ...nextJob
+      } = result;
       setLoadState({
         status: 'ready',
         job: nextJob,
         thresholds: scoringThresholds,
         scoreBreakdown: breakdown,
+        skillMatches: matches,
       });
     } catch (error) {
       showUserErrorToast(translateAuthRequestError(error, tErrors));
@@ -260,16 +275,45 @@ export function UpworkJobDetailView({ profileId, jobId }: UpworkJobDetailViewPro
             </p>
           </section>
 
-          {job.skills.length > 0 ? (
-            <section className="rounded-lg bg-muted/40 p-5">
-              <h2 className="mb-3 text-sm font-semibold text-foreground">{t('detail.skills')}</h2>
+          <section className="rounded-lg bg-muted/40 p-5" data-testid={TEST_IDS.upworkJobs.skillMatches}>
+            <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+              <h2 className="text-sm font-semibold text-foreground">{t('detail.skills')}</h2>
+              {skillMatches.length > 0 ? (
+                <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
+                  <span className="inline-flex items-center gap-1.5">
+                    <span className="size-2 rounded-full bg-emerald-500" aria-hidden />
+                    {t('detail.skillsLegendMatched')}
+                  </span>
+                  <span className="inline-flex items-center gap-1.5">
+                    <span className="size-2 rounded-full bg-amber-500" aria-hidden />
+                    {t('detail.skillsLegendMissing')}
+                  </span>
+                </div>
+              ) : null}
+            </div>
+            {skillMatches.length > 0 ? (
               <div className="flex flex-wrap gap-2">
-                {job.skills.map((skill) => (
-                  <StatusBadge key={skill} variant="muted" label={skill} />
+                {skillMatches.map((item) => (
+                  <span
+                    key={item.skill}
+                    data-testid={
+                      item.matched
+                        ? TEST_IDS.upworkJobs.skillMatched(item.skill)
+                        : TEST_IDS.upworkJobs.skillMissing(item.skill)
+                    }
+                  >
+                    <StatusBadge
+                      variant={item.matched ? 'emerald' : 'amber'}
+                      label={item.skill}
+                      className={item.matched ? undefined : 'ring-1 ring-amber-500/40'}
+                    />
+                  </span>
                 ))}
               </div>
-            </section>
-          ) : null}
+            ) : (
+              <p className="text-sm text-muted-foreground">{t('detail.skillsEmpty')}</p>
+            )}
+          </section>
         </div>
 
         <aside className="space-y-4 lg:sticky lg:top-4">

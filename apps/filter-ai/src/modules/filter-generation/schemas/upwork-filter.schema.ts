@@ -11,7 +11,7 @@ const proxyConfigurationSchema = z
 
 export const upworkFilterSchema = z
   .object({
-    queries: z.array(z.string().min(1).max(120)).min(1).max(40),
+    queries: z.array(z.string().min(1).max(120)).min(1).max(50),
     item_limit: z.number().int().min(1).max(100).optional(),
     job_posted: z.number().int().min(1).max(168).optional(),
     proxyConfiguration: proxyConfigurationSchema.optional(),

@@ -1,6 +1,6 @@
 import {
+  isExcludedUpworkClientLocation,
   UPWORK_DEFAULT_BLACKLIST_KEYWORDS,
-  UPWORK_DEFAULT_EXCLUDED_CLIENT_LOCATIONS,
 } from '@constellation/shared';
 
 export type NormalizedApifyJob = Readonly<{
@@ -41,17 +41,50 @@ function asInteger(value: unknown): number | null {
   return num == null ? null : Math.trunc(num);
 }
 
-function asSkills(value: unknown): string[] {
-  if (!Array.isArray(value)) return [];
-  return value
-    .filter((item): item is string => typeof item === 'string' && item.trim().length > 0)
-    .map((item) => item.trim());
+/** Apify may send skills as `skills` and/or `tags` (current actor shape uses tags). */
+function asSkillList(...values: unknown[]): string[] {
+  const seen = new Set<string>();
+  const result: string[] = [];
+  for (const value of values) {
+    if (!Array.isArray(value)) continue;
+    for (const item of value) {
+      if (typeof item !== 'string' || !item.trim()) continue;
+      const trimmed = item.trim();
+      const key = trimmed.toLocaleLowerCase();
+      if (seen.has(key)) continue;
+      seen.add(key);
+      result.push(trimmed);
+    }
+  }
+  return result;
 }
 
-function extractExternalId(url: string, explicit: string | null): string | null {
-  if (explicit) return explicit;
-  const match = url.match(/~0*(\d+)/) ?? url.match(/\/jobs\/[^/_]+_~0*(\d+)/);
-  return match?.[1] ?? null;
+function extractExternalId(url: string, ...candidates: Array<string | null>): string | null {
+  // Prefer the canonical id embedded in the Upwork URL (~0… digits).
+  const fromUrl = url.match(/~0*(\d+)/)?.[1] ?? url.match(/\/jobs\/[^/_]+_~0*(\d+)/)?.[1];
+  if (fromUrl) return fromUrl;
+
+  for (const explicit of candidates) {
+    if (!explicit) continue;
+    const digits = explicit.replace(/^~0*/, '');
+    if (/^\d+$/.test(digits)) return digits;
+  }
+  return candidates.find((value): value is string => Boolean(value)) ?? null;
+}
+
+/** Strip query/hash so the same listing always shares one unique job_url. */
+export function normalizeUpworkJobUrl(url: string): string {
+  try {
+    const parsed = new URL(url);
+    parsed.search = '';
+    parsed.hash = '';
+    // Keep trailing slash consistency: Upwork job paths often end with /
+    return parsed.toString();
+  } catch {
+    const withoutHash = url.split('#')[0] ?? url;
+    const withoutQuery = withoutHash.split('?')[0] ?? withoutHash;
+    return withoutQuery.trim();
+  }
 }
 
 function parsePostedAt(value: unknown): Date | null {
@@ -60,17 +93,26 @@ function parsePostedAt(value: unknown): Date | null {
   return Number.isFinite(parsed) ? new Date(parsed) : null;
 }
 
+/**
+ * Normalize Apify dataset items from getdataforme/upwork-actor (and close variants).
+ * Current live payloads use: title, url, tags, budget, jobType, clientLocation, clientRating,
+ * proposals, absoluteDate, relativeDate, clientTotalSpent — not the older job_title / skills shape.
+ */
 export function mapApifyJobItem(raw: unknown): NormalizedApifyJob | null {
   if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return null;
   const item = raw as Record<string, unknown>;
 
   const title = asString(item.job_title) ?? asString(item.title);
-  const jobUrl = asString(item.job_url) ?? asString(item.url);
-  if (!title || !jobUrl) return null;
+  const rawJobUrl = asString(item.job_url) ?? asString(item.url);
+  if (!title || !rawJobUrl) return null;
+  const jobUrl = normalizeUpworkJobUrl(rawJobUrl);
 
   const externalJobId = extractExternalId(
     jobUrl,
-    asString(item.job_uid) ?? asString(item.externalJobId) ?? asString(item.id),
+    asString(item.job_uid),
+    asString(item.id),
+    asString(item.subId),
+    asString(item.externalJobId),
   );
   if (!externalJobId) return null;
 
@@ -90,34 +132,51 @@ export function mapApifyJobItem(raw: unknown): NormalizedApifyJob | null {
     experienceLevel: asString(item.experience_level) ?? asString(item.experienceLevel),
     clientLocation: asString(item.clientLocation) ?? asString(item.client_location),
     clientRating: asNumber(item.clientRating ?? item.client_rating),
-    clientSpent: asString(item.clientSpent ?? item.client_spent),
-    skills: asSkills(item.skills),
+    clientSpent: asString(
+      item.clientSpent ?? item.client_spent ?? item.clientTotalSpent ?? item.client_total_spent,
+    ),
+    skills: asSkillList(item.skills, item.tags),
     proposals: asInteger(item.proposals),
-    postedTime: asString(item.posted_time) ?? asString(item.postedTime),
-    postedAt: parsePostedAt(item.postedAt ?? item.posted_at),
+    postedTime:
+      asString(item.posted_time) ?? asString(item.postedTime) ?? asString(item.relativeDate),
+    postedAt: parsePostedAt(
+      item.postedAt ?? item.posted_at ?? item.absoluteDate ?? item.absolute_date,
+    ),
     rawPayload: item,
   };
 }
 
 export function shouldExcludeJob(
   job: NormalizedApifyJob,
-  profileExclusions: readonly string[],
+  profileExclusions: readonly string[] | null | undefined,
 ): boolean {
-  const location = job.clientLocation?.toLocaleLowerCase() ?? '';
-  if (
-    location &&
-    UPWORK_DEFAULT_EXCLUDED_CLIENT_LOCATIONS.some((country) =>
-      location.includes(country.toLocaleLowerCase()),
-    )
-  ) {
+  if (isExcludedUpworkClientLocation(job.clientLocation)) {
     return true;
   }
 
-  const haystack = `${job.title}\n${job.description}`.toLocaleLowerCase();
-  const blacklist = [
-    ...UPWORK_DEFAULT_BLACKLIST_KEYWORDS,
-    ...profileExclusions,
-  ].map((term) => term.toLocaleLowerCase().trim()).filter(Boolean);
+  const haystack = `${job.title}\n${job.description}\n${job.skills.join('\n')}`.toLocaleLowerCase();
+  const extras = Array.isArray(profileExclusions) ? profileExclusions : [];
+  const blacklist = [...UPWORK_DEFAULT_BLACKLIST_KEYWORDS, ...extras]
+    .map((term) => (typeof term === 'string' ? term.toLocaleLowerCase().trim() : ''))
+    .filter(Boolean);
 
   return blacklist.some((term) => haystack.includes(term));
 }
+
+/**
+ * Prefer persisted skills; if empty (older scrapes before tags→skills mapping), recover from rawPayload.tags.
+ */
+export function resolveJobSkillLabels(job: {
+  skills?: readonly string[] | null;
+  rawPayload?: Record<string, unknown> | null;
+}): string[] {
+  const stored = Array.isArray(job.skills)
+    ? job.skills.filter((item): item is string => typeof item === 'string' && item.trim().length > 0)
+    : [];
+  if (stored.length > 0) return stored;
+
+  const raw = job.rawPayload;
+  if (!raw || typeof raw !== 'object') return [];
+  return asSkillList(raw.skills, raw.tags);
+}
+

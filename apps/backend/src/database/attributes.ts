@@ -177,6 +177,7 @@ export const UPWORK_JOB_ATTRS = [
   'postedTime',
   'postedAt',
   'scrapeRunId',
+  'rawPayload',
   'scrapedAt',
   'createdAt',
   'updatedAt',

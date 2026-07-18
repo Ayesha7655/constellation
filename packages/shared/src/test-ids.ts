@@ -59,6 +59,7 @@ export const TEST_IDS = {
     manufacturers: 'nav-manufacturers',
     themeToggle: 'theme-toggle',
     localeSwitcher: 'locale-switcher',
+    brand: 'nav-brand',
   },
   dashboardNav: {
     mobileOpen: 'dashboard-nav-open',
@@ -909,6 +910,9 @@ export const TEST_IDS = {
     backToList: 'upwork-jobs-back',
     detail: 'upwork-jobs-detail',
     detailRefresh: 'upwork-jobs-detail-refresh',
+    skillMatches: 'upwork-jobs-skill-matches',
+    skillMatched: (skill: string) => `upwork-jobs-skill-matched-${skill}`,
+    skillMissing: (skill: string) => `upwork-jobs-skill-missing-${skill}`,
     row: (id: string) => `upwork-jobs-row-${id}`,
     openJob: (id: string) => `upwork-jobs-open-${id}`,
     openDetail: (id: string) => `upwork-jobs-detail-link-${id}`,

@@ -233,6 +233,11 @@ export type UpworkScoreBreakdownPartDto = Readonly<{
   contribution: number;
 }>;
 
+export type UpworkSkillMatchDto = Readonly<{
+  skill: string;
+  matched: boolean;
+}>;
+
 export type PaginationMetaDto = Readonly<{
   page: number;
   limit: number;
@@ -351,6 +356,7 @@ export function getUpworkJob(
   UpworkJobDto & {
     scoringThresholds: UpworkScoringConfigDto['thresholds'];
     scoreBreakdown: readonly UpworkScoreBreakdownPartDto[];
+    skillMatches: readonly UpworkSkillMatchDto[];
   }
 > {
   return orgRequest(`${profilesBase}/${profileId}/upwork-jobs/${jobId}`);

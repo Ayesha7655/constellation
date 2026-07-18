@@ -38,6 +38,76 @@ export const UPWORK_DEFAULT_EXCLUDED_CLIENT_LOCATIONS = [
   'Sri Lanka',
 ] as const;
 
+/**
+ * ISO / Apify short codes that map to {@link UPWORK_DEFAULT_EXCLUDED_CLIENT_LOCATIONS}.
+ * Matched as whole tokens only (case-insensitive) so "IN" does not match inside other words.
+ */
+export const UPWORK_EXCLUDED_CLIENT_LOCATION_CODES = [
+  'PK',
+  'IND',
+  'IN',
+  'BD',
+  'NP',
+  'LK',
+] as const;
+
+/** Common Apify / Upwork location labels → canonical lowercase country name. */
+const UPWORK_LOCATION_CANONICAL: Readonly<Record<string, string>> = {
+  pk: 'pakistan',
+  pakistan: 'pakistan',
+  ind: 'india',
+  in: 'india',
+  india: 'india',
+  bd: 'bangladesh',
+  bangladesh: 'bangladesh',
+  np: 'nepal',
+  nepal: 'nepal',
+  lk: 'sri lanka',
+  'sri lanka': 'sri lanka',
+  srilanka: 'sri lanka',
+  us: 'united states',
+  usa: 'united states',
+  'united states': 'united states',
+  'u.s.': 'united states',
+  'u.s.a.': 'united states',
+  gb: 'united kingdom',
+  uk: 'united kingdom',
+  'united kingdom': 'united kingdom',
+  ca: 'canada',
+  canada: 'canada',
+  au: 'australia',
+  australia: 'australia',
+  de: 'germany',
+  germany: 'germany',
+  ae: 'united arab emirates',
+  uae: 'united arab emirates',
+};
+
+/**
+ * True when Apify `clientLocation` (full name or short code like `IND`) is in the default exclude list.
+ */
+export function isExcludedUpworkClientLocation(clientLocation: string | null | undefined): boolean {
+  if (!clientLocation?.trim()) return false;
+  const raw = clientLocation.trim().toLocaleLowerCase();
+  const codeSet = new Set(
+    UPWORK_EXCLUDED_CLIENT_LOCATION_CODES.map((code) => code.toLocaleLowerCase()),
+  );
+  if (codeSet.has(raw)) return true;
+
+  const canonical = UPWORK_LOCATION_CANONICAL[raw] ?? raw;
+  return UPWORK_DEFAULT_EXCLUDED_CLIENT_LOCATIONS.some((country) => {
+    const name = country.toLocaleLowerCase();
+    return canonical === name || raw.includes(name) || name.includes(canonical);
+  });
+}
+
+/** Normalize a location label/code for equality checks in scoring. */
+export function canonicalizeUpworkLocation(location: string | null | undefined): string | null {
+  if (!location?.trim()) return null;
+  const raw = location.trim().toLocaleLowerCase();
+  return UPWORK_LOCATION_CANONICAL[raw] ?? raw;
+}
+
 /** Default title/description blacklist keywords (system doc categories). */
 export const UPWORK_DEFAULT_BLACKLIST_KEYWORDS = [
   'Content Strategy',
@@ -67,7 +137,7 @@ export const UPWORK_DEFAULT_BLACKLIST_KEYWORDS = [
 
 export const DEFAULT_UPWORK_APIFY_FILTERS: UpworkApifySearchFilters = {
   queries: [],
-  item_limit: 50,
+  item_limit: 100,
   job_posted: 48,
   proxyConfiguration: {
     useApifyProxy: true,
@@ -79,14 +149,17 @@ export const DEFAULT_UPWORK_APIFY_FILTERS: UpworkApifySearchFilters = {
 /**
  * Normalize saved filter JSON (including legacy blackfalcondata shapes) into actor input.
  */
-export function normalizeUpworkApifyFilters(raw: Record<string, unknown>): UpworkApifySearchFilters {
-  const queriesFromArray = Array.isArray(raw.queries)
-    ? raw.queries.filter((item): item is string => typeof item === 'string' && item.trim().length > 0)
+export function normalizeUpworkApifyFilters(
+  raw: Record<string, unknown> | null | undefined,
+): UpworkApifySearchFilters {
+  const source = raw && typeof raw === 'object' && !Array.isArray(raw) ? raw : {};
+  const queriesFromArray = Array.isArray(source.queries)
+    ? source.queries.filter((item): item is string => typeof item === 'string' && item.trim().length > 0)
     : [];
 
   let queries = queriesFromArray;
   if (queries.length === 0) {
-    const legacy = raw.query;
+    const legacy = source.query;
     if (typeof legacy === 'string' && legacy.trim()) {
       queries = [legacy.trim()];
     } else if (Array.isArray(legacy)) {
@@ -94,26 +167,25 @@ export function normalizeUpworkApifyFilters(raw: Record<string, unknown>): Upwor
     }
   }
 
-  const itemLimitRaw = raw.item_limit ?? raw.maxResults;
+  const itemLimitRaw = source.item_limit ?? source.maxResults;
   const item_limit =
     typeof itemLimitRaw === 'number' && Number.isFinite(itemLimitRaw)
       ? Math.min(100, Math.max(1, Math.trunc(itemLimitRaw)))
       : DEFAULT_UPWORK_APIFY_FILTERS.item_limit;
 
-  const jobPostedRaw = raw.job_posted;
+  const jobPostedRaw = source.job_posted;
   const job_posted =
     typeof jobPostedRaw === 'number' && Number.isFinite(jobPostedRaw)
       ? Math.min(168, Math.max(1, Math.trunc(jobPostedRaw)))
       : DEFAULT_UPWORK_APIFY_FILTERS.job_posted;
 
-  const proxyRaw = raw.proxyConfiguration;
+  const proxyRaw = source.proxyConfiguration;
   const proxyConfiguration =
     proxyRaw && typeof proxyRaw === 'object' && !Array.isArray(proxyRaw)
       ? (proxyRaw as UpworkApifyProxyConfiguration)
       : DEFAULT_UPWORK_APIFY_FILTERS.proxyConfiguration;
 
   return {
-    ...raw,
     queries,
     item_limit,
     job_posted,
