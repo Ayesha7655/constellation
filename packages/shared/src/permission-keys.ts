@@ -15,6 +15,8 @@ export const ORG = {
   UPWORK_JOBS_READ: 'org.upwork_jobs.read',
   UPWORK_SCORING_READ: 'org.upwork_scoring.read',
   UPWORK_SCORING_UPDATE: 'org.upwork_scoring.update',
+  PROPOSALS_READ: 'org.proposals.read',
+  PROPOSALS_UPDATE: 'org.proposals.update',
 } as const;
 
 export const ACCOUNT = {

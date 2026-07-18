@@ -1,5 +1,5 @@
 #Requires -Version 5.1
-# New Windows Terminal window: 2×2 split — frontend / backend / shared / filter-ai.
+# New Windows Terminal window: 2×2 split — frontend / backend / shared / ai.
 # Opens Cursor/VS Code separately. macOS equivalent: shell-script.sh
 
 $ErrorActionPreference = 'Stop'
@@ -28,17 +28,17 @@ if (-not $wt) {
 $sharedDir = Join-Path $Root 'packages\shared'
 $frontendDir = Join-Path $Root 'apps\frontend'
 $backendDir = Join-Path $Root 'apps\backend'
-$filterAiDir = Join-Path $Root 'apps\filter-ai'
+$aiDir = Join-Path $Root 'apps\ai'
 
-foreach ($dir in @($sharedDir, $frontendDir, $backendDir, $filterAiDir)) {
+foreach ($dir in @($sharedDir, $frontendDir, $backendDir, $aiDir)) {
   if (-not (Test-Path -LiteralPath $dir)) {
     Write-Error "Missing directory: $dir"
   }
 }
 
 # Layout:
-#   [ frontend ] [ shared    ]
-#   [ backend  ] [ filter-ai ]
+#   [ frontend ] [ shared ]
+#   [ backend  ] [ ai     ]
 #
 # Build one wt argument string (reliably parsed by Windows Terminal).
 # Avoid Start-Process failures aborting before wt (editor is best-effort).
@@ -49,7 +49,7 @@ $argList = @(
   "move-focus left"
   "split-pane -H -d `"$backendDir`" cmd /k `"pnpm dev`""
   "move-focus right"
-  "split-pane -H -d `"$filterAiDir`" cmd /k `"pnpm dev`""
+  "split-pane -H -d `"$aiDir`" cmd /k `"pnpm dev`""
 ) -join ' ; '
 
 Start-Process -FilePath $wt.Source -ArgumentList $argList

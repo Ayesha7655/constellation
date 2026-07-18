@@ -386,6 +386,202 @@ export function getUpworkOverview(): Promise<UpworkOverviewDto> {
   return orgRequest('/organizations/me/upwork/overview');
 }
 
+export type ProposalStylePreferencesDto = Readonly<{
+  tone?: string | null;
+  lengthTarget?: string | null;
+  structureNotes?: string | null;
+  alwaysUse?: string[];
+  neverUse?: string[];
+  rateMentionPolicy?: string | null;
+  ctaStyle?: string | null;
+  extraNotes?: string | null;
+}>;
+
+export type ProposalStylePackDto = Readonly<{
+  freelancerProfileId: string;
+  preferences: ProposalStylePreferencesDto;
+  updatedAt: string | null;
+}>;
+
+export type ProposalExampleDto = Readonly<{
+  id: string;
+  freelancerProfileId: string;
+  title: string | null;
+  body: string;
+  jobContext: string | null;
+  isStarred: boolean;
+  source: string;
+  attachments: ProposalAttachmentDto[];
+  createdAt: string;
+  updatedAt: string;
+}>;
+
+export type ProposalAttachmentDto = Readonly<{
+  id: string;
+  storageKey: string;
+  fileName: string;
+  mimeType: string;
+  sizeBytes: number;
+  sortOrder: number;
+}>;
+
+export type ProposalDraftDto = Readonly<{
+  id: string;
+  freelancerProfileId: string;
+  upworkJobId: string;
+  body: string;
+  status: string;
+  provenance: string;
+  modelMeta: Record<string, unknown> | null;
+  attachments: ProposalAttachmentDto[];
+  createdAt: string;
+  updatedAt: string;
+}>;
+
+export function getProposalStylePack(profileId: string): Promise<ProposalStylePackDto> {
+  return orgRequest(`${profilesBase}/${profileId}/proposal-style-pack`);
+}
+
+export function upsertProposalStylePack(
+  profileId: string,
+  preferences: ProposalStylePreferencesDto,
+): Promise<ProposalStylePackDto> {
+  return orgRequest(`${profilesBase}/${profileId}/proposal-style-pack`, {
+    method: 'PUT',
+    body: JSON.stringify({ preferences }),
+  });
+}
+
+export function extractProposalStylePack(profileId: string): Promise<ProposalStylePackDto> {
+  return orgRequest(`${profilesBase}/${profileId}/proposal-style-pack/extract-from-examples`, {
+    method: 'POST',
+    body: '{}',
+  });
+}
+
+export function listProposalExamples(profileId: string): Promise<{ examples: ProposalExampleDto[] }> {
+  return orgRequest(`${profilesBase}/${profileId}/proposal-examples`);
+}
+
+export function createProposalExample(
+  profileId: string,
+  payload: {
+    title?: string | null;
+    body: string;
+    jobContext?: string | null;
+    isStarred?: boolean;
+    attachmentStorageKeys?: string[];
+  },
+): Promise<{ example: ProposalExampleDto }> {
+  return orgRequest(`${profilesBase}/${profileId}/proposal-examples`, {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+}
+
+export function updateProposalExample(
+  profileId: string,
+  exampleId: string,
+  payload: {
+    title?: string | null;
+    body?: string;
+    jobContext?: string | null;
+    isStarred?: boolean;
+  },
+): Promise<{ example: ProposalExampleDto }> {
+  return orgRequest(`${profilesBase}/${profileId}/proposal-examples/${exampleId}`, {
+    method: 'PATCH',
+    body: JSON.stringify(payload),
+  });
+}
+
+export function deleteProposalExample(profileId: string, exampleId: string): Promise<{ ok: true }> {
+  return orgRequest(`${profilesBase}/${profileId}/proposal-examples/${exampleId}`, {
+    method: 'DELETE',
+  });
+}
+
+export function getProposalDraft(
+  profileId: string,
+  jobId: string,
+): Promise<{ draft: ProposalDraftDto | null }> {
+  return orgRequest(`${profilesBase}/${profileId}/upwork-jobs/${jobId}/proposal-draft`, {
+    trackGlobalLoading: false,
+  });
+}
+
+export function generateProposalDraft(
+  profileId: string,
+  jobId: string,
+): Promise<{ draft: ProposalDraftDto }> {
+  return orgRequest(`${profilesBase}/${profileId}/upwork-jobs/${jobId}/proposal-draft/generate`, {
+    method: 'POST',
+    body: '{}',
+  });
+}
+
+export function saveProposalDraft(
+  profileId: string,
+  jobId: string,
+  payload: { body: string; addToLibrary?: boolean },
+): Promise<{ draft: ProposalDraftDto }> {
+  return orgRequest(`${profilesBase}/${profileId}/upwork-jobs/${jobId}/proposal-draft`, {
+    method: 'PUT',
+    body: JSON.stringify(payload),
+  });
+}
+
+export function uploadProposalAttachment(
+  profileId: string,
+  payload: { base64: string; fileName: string; mimeType?: string },
+): Promise<{ storageKey: string; fileName: string; mimeType: string; sizeBytes: number }> {
+  return orgRequest(`${profilesBase}/${profileId}/proposal-attachments/upload`, {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+}
+
+export function revertProposalAttachmentUploads(
+  profileId: string,
+  keys: string[],
+): Promise<{ ok: true }> {
+  return orgRequest(`${profilesBase}/${profileId}/proposal-attachments/revert`, {
+    method: 'POST',
+    body: JSON.stringify({ keys }),
+  });
+}
+
+export function deleteProposalAttachment(
+  profileId: string,
+  attachmentId: string,
+): Promise<{ ok: true }> {
+  return orgRequest(`${profilesBase}/${profileId}/proposal-attachments/${attachmentId}`, {
+    method: 'DELETE',
+  });
+}
+
+export function attachProposalExampleAttachment(
+  profileId: string,
+  exampleId: string,
+  storageKey: string,
+): Promise<{ attachment: ProposalAttachmentDto }> {
+  return orgRequest(`${profilesBase}/${profileId}/proposal-examples/${exampleId}/attachments`, {
+    method: 'POST',
+    body: JSON.stringify({ storageKey }),
+  });
+}
+
+export function attachProposalDraftAttachment(
+  profileId: string,
+  jobId: string,
+  storageKey: string,
+): Promise<{ attachment: ProposalAttachmentDto; draftId: string }> {
+  return orgRequest(`${profilesBase}/${profileId}/upwork-jobs/${jobId}/proposal-draft/attachments`, {
+    method: 'POST',
+    body: JSON.stringify({ storageKey }),
+  });
+}
+
 export function markExtensionConnected(): Promise<{ ok: true; extensionConnected: true }> {
   return orgRequest('/organizations/me/upwork/extension/mark-connected', {
     method: 'POST',

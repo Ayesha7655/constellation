@@ -54,4 +54,5 @@ Thumbs.db
 # Certificates / keys
 *.pem
 apps/backend/.credentials/
+apps/backend/.data/
 **/firebase-adminsdk*.json

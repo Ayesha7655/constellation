@@ -196,5 +196,55 @@ export const SCRAPE_RUN_JOB_ATTRS = [
   'createdAt',
 ] as const;
 
+export const PROPOSAL_STYLE_PACK_ATTRS = [
+  'id',
+  'orgId',
+  'freelancerProfileId',
+  'preferences',
+  'createdAt',
+  'updatedAt',
+] as const;
+
+export const PROPOSAL_EXAMPLE_ATTRS = [
+  'id',
+  'orgId',
+  'freelancerProfileId',
+  'title',
+  'body',
+  'jobContext',
+  'isStarred',
+  'source',
+  'createdAt',
+  'updatedAt',
+] as const;
+
+export const PROPOSAL_DRAFT_ATTRS = [
+  'id',
+  'orgId',
+  'freelancerProfileId',
+  'upworkJobId',
+  'body',
+  'status',
+  'provenance',
+  'modelMeta',
+  'createdAt',
+  'updatedAt',
+] as const;
+
+export const PROPOSAL_ATTACHMENT_ATTRS = [
+  'id',
+  'orgId',
+  'freelancerProfileId',
+  'proposalDraftId',
+  'proposalExampleId',
+  'storageKey',
+  'fileName',
+  'mimeType',
+  'sizeBytes',
+  'sortOrder',
+  'createdAt',
+  'updatedAt',
+] as const;
+
 export const ORG_EXTENSION_ATTRS = ['id', 'extensionConnectedAt'] as const;
 export const ORG_SCORING_ATTRS = ['id', 'upworkScoringConfig'] as const;

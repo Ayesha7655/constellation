@@ -13,3 +13,7 @@ export { ExtensionPairingCode } from './extension-pairing-code.model';
 export { ScrapeRun } from './scrape-run.model';
 export { UpworkJob } from './upwork-job.model';
 export { ScrapeRunJob } from './scrape-run-job.model';
+export { ProposalStylePack } from './proposal-style-pack.model';
+export { ProposalExample } from './proposal-example.model';
+export { ProposalDraft } from './proposal-draft.model';
+export { ProposalAttachment } from './proposal-attachment.model';

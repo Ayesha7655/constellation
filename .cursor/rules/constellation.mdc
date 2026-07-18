@@ -1,5 +1,5 @@
 ---
-description: Constellation monorepo conventions for frontend, backend, Chrome extension, Filter AI, database, testing, and delivery
+description: Constellation monorepo conventions for frontend, backend, Chrome extension, AI service, database, testing, and delivery
 alwaysApply: true
 ---
 
@@ -11,9 +11,9 @@ alwaysApply: true
 - **Frontend:** `apps/frontend` — Next.js 16, TypeScript, Tailwind CSS v4
 - **Backend:** `apps/backend` — NestJS, sequelize-typescript, class-validator
 - **Extension:** `apps/extension` — Chrome MV3, React, TypeScript, Vite. Load the built `dist/` directory.
-- **Filter AI:** `apps/filter-ai` — internal NestJS HTTP microservice for AI-backed filter generation
+- **AI service:** `apps/ai` — internal NestJS HTTP microservice for AI-backed filter + proposal generation
 - Run workspace apps: `pnpm dev` from repo root
-- Default ports: frontend `4000`, backend `4050`, Filter AI `4060` (all env-configurable)
+- Default ports: frontend `4000`, backend `4050`, AI service `4060` (all env-configurable)
 - Run `pnpm typecheck` before commits/CI — strict TypeScript across all TypeScript workspace apps
 - **v1 scope:** auth, organizations, RBAC shell — no domain modules (listings, inspections, etc.). Design spec: `docs/superpowers/specs/2026-07-11-constellation-v1-design.md`
 - **Caching (v1):** DB-only for auth/RBAC — **no Redis** in v1; `PermissionsService` lives in `apps/backend/src/database/` and reads grants from Postgres directly
@@ -111,27 +111,30 @@ pnpm --filter extension build
 - Manually verify both disconnected and connected screens, invalid/expired pairing, one-click pairing, token
   refresh, non-Upwork tabs, sync success, sync failure, and disconnect.
 
-## Filter AI microservice
+## AI service
 
-`apps/filter-ai` is currently an internal NestJS HTTP microservice. The backend is its only caller; the frontend
-and extension never call it directly. Preserve this internal boundary so the service can later become a
+`apps/ai` is an internal NestJS HTTP microservice (renamed from `filter-ai`). The backend is its only caller; the
+frontend and extension never call it directly. Preserve this internal boundary so the service can later become a
 standalone product without coupling UI clients to its provider or prompt contract.
 
-### Filter AI architecture (required)
+### AI service architecture (required)
 
 | Concern | Location | Responsibility |
 |---------|----------|----------------|
-| Bootstrap | `apps/filter-ai/src/main.ts` | Nest creation, global validation, shutdown hooks, port |
+| Bootstrap | `apps/ai/src/main.ts` | Nest creation, global validation, shutdown hooks, port |
 | Root composition | `src/app.module.ts` | Global `ConfigModule`, health, and feature modules |
 | Internal auth | `src/common/guards/` | Constant-time `x-internal-key` validation; fail closed |
 | Health | `src/health/` | Process liveness only; no OpenAI call |
-| Feature transport | `src/modules/filter-generation/*controller.ts` | Thin route wiring and DTO boundary |
+| Filter feature | `src/modules/filter-generation/` | Apify filter generation |
+| Proposal feature | `src/modules/proposal-generation/` | Proposal draft generation |
+| Feature transport | `*controller.ts` | Thin route wiring and DTO boundary |
 | Orchestration | `*service.ts` | Provider selection and explicit fallback policy |
 | DTOs | `dto/` | `class-validator` request validation |
-| Prompts | `prompts/` | Reviewable/versionable system prompts and user-prompt builders |
+| Prompts (markdown) | `apps/ai/prompts/**/*.md` | Editable system/user prompts; loaded at runtime |
+| Prompt loader | `src/common/prompts/` | `loadPrompt` + thin builders that fill `{{PLACEHOLDERS}}` |
 | Output schemas | `schemas/` | Strict runtime validation of model output |
 | Providers | `providers/` | OpenAI SDK integration only |
-| Fallbacks | `fallbacks/` | Pure deterministic filter generation |
+| Fallbacks | `fallbacks/` | Pure deterministic generation |
 
 - Use Nest modules/controllers/services; do not reintroduce `node:http`, manual body buffering, or a monolithic
   `index.ts`.
@@ -143,33 +146,38 @@ standalone product without coupling UI clients to its provider or prompt contrac
 
 ### Internal HTTP contract and security
 
-- Preserve `GET /health` and authenticated `POST /v1/generate-filters` unless a coordinated versioned migration
-  updates both the service and backend client.
+- Preserve `GET /health`, authenticated `POST /v1/generate-filters`, and `POST /v1/generate-proposal` unless a
+  coordinated versioned migration updates both the service and backend client.
 - `GET /health` is liveness and remains unauthenticated. Generation requires `x-internal-key`.
 - Compare the shared key in constant time and fail closed when the key or configuration is missing.
-- Request DTOs validate nested profile fields with `class-validator`; global `ValidationPipe` uses
+- Request DTOs validate nested fields with `class-validator`; global `ValidationPipe` uses
   `whitelist`, `forbidNonWhitelisted`, and `transform`.
-- Shared compile-time request/response contracts belong in `packages/shared/src/upwork.ts`; runtime validation
-  remains at each network boundary.
-- The backend client must set a bounded timeout (`FILTER_AI_TIMEOUT_MS`), catch network/timeout/JSON failures,
-  reject null/arrays/malformed `filters`, and map failures to the stable coded API error.
+- Shared compile-time request/response contracts belong in `packages/shared` (`upwork.ts`, `proposal.ts`);
+  runtime validation remains at each network boundary.
+- The backend client (`ai-service.client.ts`) must set a bounded timeout (`AI_SERVICE_TIMEOUT_MS`), catch
+  network/timeout/JSON failures, reject malformed payloads, and map failures to stable coded API errors.
 - Document backend-facing generation failures in the route's OpenAPI composite.
-- Keep `FILTER_AI_URL`, `FILTER_AI_INTERNAL_KEY`, `FILTER_AI_TIMEOUT_MS`, `OPENAI_API_KEY`, `OPENAI_MODEL`, and
-  `PORT` flat. Document every new variable in the relevant `.env.example` with a safe default or empty value.
+- Keep `AI_SERVICE_URL`, `AI_SERVICE_INTERNAL_KEY`, `AI_SERVICE_TIMEOUT_MS`, `OPENAI_API_KEY`, `OPENAI_MODEL`,
+  `AI_PROMPTS_DIR`, and `PORT` flat. Document every new variable in the relevant `.env.example` with a safe
+  default or empty value.
 
 ### Prompt organization and safety
 
-- Prompts are code artifacts, not strings embedded inside provider calls. Keep system instructions and user
-  prompt construction in `prompts/`.
+- **All LLM instruction prompts live as Markdown under `apps/ai/prompts/`** (not inline strings in providers).
+  Edit those files independently; Nest loads them via `loadPrompt()` / builders in `src/common/prompts/`.
+- Optional override: `AI_PROMPTS_DIR` (absolute path). In non-production, files are re-read each request so
+  prompt edits apply without a rebuild.
+- User templates use `{{PLACEHOLDER}}` substitution; keep builders thin — no long prompt prose in TypeScript.
 - State the target actor, exact allowed output fields, enum/range constraints, defaults, and omission policy.
-- Explicitly instruct the model that profile fields are untrusted data and that embedded instructions, role
-  changes, or output requests must be ignored.
+- Explicitly instruct the model that profile/job/style/example fields are untrusted data and that embedded
+  instructions, role changes, or output requests must be ignored.
 - Do not send fields unnecessary for generation (for example profile URL, source, org/user IDs, or secrets).
 - Keep prompt inputs bounded. Respect DTO length/count limits and add deliberate truncation before introducing
   larger free-form fields.
 - Prefer low temperature and provider-supported structured JSON output, but still validate locally.
 - Prompt changes must be reviewed together with the output schema and deterministic fallback; avoid prompt/schema
   contradictions such as different result ranges or allowing fields the schema rejects.
+- Document `AI_PROMPTS_DIR` in `apps/ai/.env.example` when used.
 
 ### Output validation and fallback policy
 
@@ -183,8 +191,7 @@ standalone product without coupling UI clients to its provider or prompt contrac
   - OpenAI transport/auth/rate-limit/provider exception → generation failure, not silent fallback.
 - Do not broaden fallback-on-provider-error while the backend persists provenance as `AI`. If resilience requires
   that later, first add generation-mode metadata and a truthful provenance value such as `heuristic`.
-- Fallback functions stay pure and deterministic: deduplicate query terms, honor exclusions, map hourly-rate
-  bounds, and apply stable actor defaults.
+- Fallback functions stay pure and deterministic.
 - Do not let model output silently override hard product constraints. Decide whether a value is a default or an
   invariant and enforce it consistently in prompt, schema, and normalization.
 
@@ -192,12 +199,12 @@ standalone product without coupling UI clients to its provider or prompt contrac
 
 - `nest build` must emit deployable JavaScript; production runs `node dist/main.js`. Do not use `tsx` as the
   production runtime.
-- After Filter AI or shared-contract changes run:
+- After AI service or shared-contract changes run:
 
 ```bash
 pnpm --filter @constellation/shared build
-pnpm --filter filter-ai typecheck
-pnpm --filter filter-ai build
+pnpm --filter ai typecheck
+pnpm --filter ai build
 pnpm --filter backend typecheck
 ```
 
@@ -205,9 +212,9 @@ pnpm --filter backend typecheck
   malformed provider output, provider failure, and backend timeout/malformed-response handling.
 - Tests must mock the provider and must never call the real OpenAI API.
 - When deploying separately, build from the monorepo root so `@constellation/shared` is available; add a service
-  image/healthcheck and a release trigger covering `apps/filter-ai/**` plus relevant shared changes.
+  image/healthcheck and a release trigger covering `apps/ai/**` plus relevant shared changes.
 - A later standalone app may add public auth, persistence, UI, billing, or provider selection. Add those around
-  the internal generation module; do not collapse prompt/provider/domain logic back into controllers.
+  the generation modules; do not collapse prompt/provider/domain logic back into controllers.
 
 ## Database module (required)
 
@@ -252,13 +259,13 @@ pnpm typecheck          # turbo: runs all workspace typechecks
 pnpm --filter frontend typecheck
 pnpm --filter backend typecheck
 pnpm --filter extension typecheck
-pnpm --filter filter-ai typecheck
+pnpm --filter ai typecheck
 ```
 
 - **Frontend:** `tsc --noEmit` (config: `apps/frontend/tsconfig.json`)
 - **Backend:** `tsc --noEmit` (config: `apps/backend/tsconfig.json`, includes `src/`)
 - **Extension:** `tsc --noEmit` (config: `apps/extension/tsconfig.json`)
-- **Filter AI:** `tsc --noEmit` (config: `apps/filter-ai/tsconfig.json`)
+- **AI service:** `tsc --noEmit` (config: `apps/ai/tsconfig.json`)
 
 Run `pnpm typecheck` after TypeScript changes and before opening PRs. Wire this into CI alongside `build` and `lint`.
 
@@ -345,7 +352,7 @@ Every **editable** form or dialog — pages, wizards, admin CRUD dialogs, inspec
 | Pitfall | Correct approach |
 |---------|------------------|
 | Native `<form>` with Formik | Use Formik **`<Form>`** — native submit without `preventDefault` reloads the page and appends query params to the URL. |
-| Shared **`Button`** in toolbars / table actions | Pass **`fullWidth={false}`** — default is `w-full`, which stacks icon + label vertically in tight layouts. |
+| Shared **`Button`** in toolbars / table actions | Pass **`fullWidth={false}`** — default is `w-full`, which stretches the control in tight layouts. Icon+label stay horizontal via Button’s built-in `inline-flex items-center gap-2`; do not override with `flex-col`. |
 | **`table-fixed`** preview columns | Set **`cellClassName: 'max-w-0'`**, clamp with **`line-clamp-3`** (or `truncate`), and put the full string in a **`title` tooltip** — otherwise long copy blows out the layout and pushes actions off-screen. |
 | Sticky row actions in scrollable tables | Pin the actions column with **`sticky end-0`** + opaque **`bg-card`** on header/cells so horizontal scroll keeps actions visible. |
 | Popover / datetime panels near viewport edge | Support **`placement: 'auto' \| 'below' \| 'above'`** — measure trigger + panel height; flip above when insufficient space below (`DateTimePicker` in `@constellation/shared/ui`). |
@@ -730,7 +737,12 @@ Every **admin, partner, and seller** screen that shows a **paginated list** or *
 
 - One clear primary action per group (`Button` primary or outline).
 - **Primary on the end:** same rule as **Forms → Action buttons** — CTAs, header actions, card footers, and retry buttons align to **inline-end** unless a design says otherwise.
-- **Icon + label buttons:** always keep the icon and label on **one row** — use `inline-flex items-center gap-2` (or `gap-1.5` for compact links) on `Button`, `Link`, or native `<button>`; set icons to `shrink-0`. Never stack a `Plus` (or other) icon above label text on separate lines.
+- **Icon + label buttons (required):** icon and label must stay on **one horizontal row**, never stacked.
+  - Shared **`Button`** (`packages/shared/src/ui/button.tsx`) already uses `inline-flex items-center justify-center gap-2` — **do not remove or override** that with `flex-col`, `block`, or styles that stack children.
+  - Put Lucide icons **before** the label in the DOM; mark decorative icons `aria-hidden` and `className="… shrink-0"` (e.g. `size-4 shrink-0`).
+  - For compact toolbars, pass **`fullWidth={false}`** — default `w-full` can make icon+label look vertically awkward in tight action rows even when flex direction is row.
+  - Native `<button>` / `Link` with an icon + label: same pattern — `inline-flex items-center gap-2` (or `gap-1.5`), icon `shrink-0`.
+  - Icon-only controls (table row actions, refresh): no label text required; still use centered flex and a proper **`aria-label`**.
 - Secondary or low-risk actions: text links or icon buttons — do not stack multiple same-weight outline buttons side by side.
 - Destructive secondary actions (remove photo, sign out device): `text-destructive` text actions unless the flow is an explicit delete confirmation.
 

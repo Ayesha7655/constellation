@@ -44,7 +44,7 @@ export class SearchFiltersController {
   @Post('generate')
   @RequirePermissions(ORG.SEARCH_FILTERS_UPDATE)
   @ApiJwtProtectedRoute({
-    summary: 'Generate Apify filters from a freelancer profile via filter-ai',
+    summary: 'Generate Apify filters from a freelancer profile via the AI service',
     ok: {
       schema: {
         example: { provenance: 'ai', filters: { queries: ['react developer'], item_limit: 100, job_posted: 48 } },

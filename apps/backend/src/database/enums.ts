@@ -38,3 +38,18 @@ export enum ScrapeRunTrigger {
   MANUAL = 'manual',
   SCHEDULE = 'schedule',
 }
+
+export enum ProposalExampleSource {
+  UPLOAD = 'upload',
+  ACCEPTED_DRAFT = 'accepted_draft',
+}
+
+export enum ProposalDraftStatus {
+  DRAFT = 'draft',
+  SAVED = 'saved',
+}
+
+export enum ProposalDraftProvenance {
+  AI = 'ai',
+  MANUAL = 'manual',
+}

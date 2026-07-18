@@ -34,6 +34,7 @@ import {
   type UpworkScoringConfigDto,
   type UpworkSkillMatchDto,
 } from '@/services/freelancer-api';
+import { JobProposalPanel } from '@/components/org/job-proposal-panel';
 
 const JOBS_BASE = `${DASHBOARD_BASE_PATH.org}/upwork/jobs`;
 
@@ -314,6 +315,8 @@ export function UpworkJobDetailView({ profileId, jobId }: UpworkJobDetailViewPro
               <p className="text-sm text-muted-foreground">{t('detail.skillsEmpty')}</p>
             )}
           </section>
+
+          <JobProposalPanel profileId={profileId} jobId={jobId} />
         </div>
 
         <aside className="space-y-4 lg:sticky lg:top-4">

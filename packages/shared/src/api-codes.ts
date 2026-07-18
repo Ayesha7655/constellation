@@ -139,6 +139,17 @@ export const API_ERROR_CODES = {
   UPWORK_JOB_NOT_FOUND: 'api.upwork_job.not_found',
   UPWORK_SCORING_WEIGHTS_INVALID: 'api.upwork_scoring.weights_invalid',
   UPWORK_SCORING_THRESHOLDS_INVALID: 'api.upwork_scoring.thresholds_invalid',
+  PROPOSAL_NOT_FOUND: 'api.proposal.not_found',
+  PROPOSAL_GENERATE_FAILED: 'api.proposal.generate_failed',
+  PROPOSAL_EXAMPLE_NOT_FOUND: 'api.proposal.example_not_found',
+  PROPOSAL_EXAMPLES_REQUIRED: 'api.proposal.examples_required',
+  PROPOSAL_STYLE_EXTRACT_FAILED: 'api.proposal.style_extract_failed',
+  PROPOSAL_ATTACHMENT_NOT_FOUND: 'api.proposal.attachment_not_found',
+  PROPOSAL_ATTACHMENT_INVALID: 'api.proposal.attachment_invalid',
+  PROPOSAL_ATTACHMENT_TOO_LARGE: 'api.proposal.attachment_too_large',
+  PROPOSAL_ATTACHMENT_LIMIT: 'api.proposal.attachment_limit',
+  PROPOSAL_ATTACHMENT_TYPE: 'api.proposal.attachment_type',
+  PROPOSAL_ATTACHMENT_UPLOAD_FAILED: 'api.proposal.attachment_upload_failed',
 } as const;
 
 export type ApiErrorCode = (typeof API_ERROR_CODES)[keyof typeof API_ERROR_CODES];

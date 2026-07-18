@@ -27,7 +27,7 @@ export function Button({ variant = 'primary', fullWidth = true, className, type 
       type={type}
       data-testid={testId}
       className={cn(
-        'cursor-pointer rounded-md px-4 py-2 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50',
+        'inline-flex cursor-pointer items-center justify-center gap-2 rounded-md px-4 py-2 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50',
         fullWidth && 'w-full',
         variantClasses[variant],
         className,

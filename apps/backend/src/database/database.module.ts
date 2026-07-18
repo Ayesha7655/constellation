@@ -18,6 +18,10 @@ import {
   ScrapeRun,
   UpworkJob,
   ScrapeRunJob,
+  ProposalStylePack,
+  ProposalExample,
+  ProposalDraft,
+  ProposalAttachment,
 } from './models';
 
 const models = [
@@ -36,6 +40,10 @@ const models = [
   ScrapeRun,
   UpworkJob,
   ScrapeRunJob,
+  ProposalStylePack,
+  ProposalExample,
+  ProposalDraft,
+  ProposalAttachment,
 ];
 
 @Global()

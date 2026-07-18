@@ -4,10 +4,17 @@ import { DatabaseModule } from '../../database/database.module';
 import { ApifyClient } from './apify.client';
 import { ExtensionPairingController, ExtensionPublicController } from './extension-pairing.controller';
 import { ExtensionPairingService } from './extension-pairing.service';
-import { FilterAiClient } from './filter-ai.client';
+import { AiServiceClient } from './ai-service.client';
 import { FreelancerProfileController } from './freelancer-profile.controller';
 import { FreelancerProfileService } from './freelancer-profile.service';
 import { OrgContextService } from './org-context.service';
+import { ProposalDraftsController } from './proposal-drafts.controller';
+import { ProposalExamplesController } from './proposal-examples.controller';
+import { ProposalAttachmentsController } from './proposal-attachments.controller';
+import { ProposalStylePackController } from './proposal-style-pack.controller';
+import { ProposalsService } from './proposals.service';
+import { ProposalAttachmentUploadRegistry } from './proposal-attachment-upload-registry.service';
+import { ObjectStorageService } from '../../common/storage/object-storage.service';
 import { ScrapeRunsController } from './scrape-runs.controller';
 import { ScrapeRunsService } from './scrape-runs.service';
 import { SearchFiltersController } from './search-filters.controller';
@@ -24,6 +31,10 @@ import { UpworkScoringService } from './upwork-scoring.service';
   controllers: [
     FreelancerProfileController,
     SearchFiltersController,
+    ProposalStylePackController,
+    ProposalExamplesController,
+    ProposalDraftsController,
+    ProposalAttachmentsController,
     ScrapeRunsController,
     UpworkJobsController,
     UpworkOverviewController,
@@ -35,12 +46,15 @@ import { UpworkScoringService } from './upwork-scoring.service';
     OrgContextService,
     FreelancerProfileService,
     SearchFiltersService,
+    ProposalsService,
+    ProposalAttachmentUploadRegistry,
+    ObjectStorageService,
     ScrapeRunsService,
     UpworkJobsService,
     UpworkOverviewService,
     UpworkScoringService,
     ExtensionPairingService,
-    FilterAiClient,
+    AiServiceClient,
     ApifyClient,
   ],
 })

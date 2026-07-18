@@ -6,7 +6,7 @@ import { FREELANCER_PROFILE_ATTRS, SEARCH_FILTER_SET_ATTRS } from '../../databas
 import { SearchFilterProvenance } from '../../database/enums';
 import { FreelancerProfile } from '../../database/models/freelancer-profile.model';
 import { SearchFilterSet } from '../../database/models/search-filter-set.model';
-import { FilterAiClient } from './filter-ai.client';
+import { AiServiceClient } from './ai-service.client';
 import { OrgContextService } from './org-context.service';
 import { UpdateSearchFiltersDto } from './dto/update-search-filters.dto';
 
@@ -16,7 +16,7 @@ export class SearchFiltersService {
     @InjectModel(SearchFilterSet) private readonly filterModel: typeof SearchFilterSet,
     @InjectModel(FreelancerProfile) private readonly profileModel: typeof FreelancerProfile,
     private readonly orgContext: OrgContextService,
-    private readonly filterAiClient: FilterAiClient,
+    private readonly aiServiceClient: AiServiceClient,
   ) {}
 
   async getFilters(userId: string | undefined, profileId: string) {
@@ -73,7 +73,7 @@ export class SearchFiltersService {
     const { userId: id, orgId } = await this.orgContext.requireOrgIdForUser(userId);
     const profile = await this.requireOwnedProfile(orgId, profileId);
 
-    const { filters } = await this.filterAiClient.generateFilters({
+    const { filters } = await this.aiServiceClient.generateFilters({
       profile: {
         title: profile.title,
         overview: profile.overview,

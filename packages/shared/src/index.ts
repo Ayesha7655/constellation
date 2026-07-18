@@ -8,4 +8,6 @@ export * from './pagination';
 export * from './list-text-search';
 export * from './upwork';
 export * from './upwork-scoring';
+export * from './proposal';
+export * from './upload';
 export * from './lib/utils';

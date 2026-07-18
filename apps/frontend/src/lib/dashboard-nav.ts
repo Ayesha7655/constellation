@@ -114,6 +114,12 @@ export const orgDashboardNav: DashboardNavConfig = {
           permissionKey: ORG.SEARCH_FILTERS_READ,
         },
         {
+          href: `${DASHBOARD_BASE_PATH.org}/upwork/proposals`,
+          labelKey: 'org.nav.proposals',
+          iconKey: 'filePen',
+          permissionKey: ORG.PROPOSALS_READ,
+        },
+        {
           href: `${DASHBOARD_BASE_PATH.org}/upwork/jobs`,
           labelKey: 'org.nav.upworkJobs',
           iconKey: 'list',
