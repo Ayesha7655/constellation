@@ -117,6 +117,9 @@ export const FREELANCER_PROFILE_ATTRS = [
   'createdAt',
 ] as const;
 
+/** Match import drafts to existing org profiles by URL / Upwork UID. */
+export const FREELANCER_PROFILE_MATCH_ATTRS = ['id', 'profileUrl', 'rawSnapshot'] as const;
+
 export const PROFILE_IMPORT_DRAFT_ATTRS = ['id', 'orgId', 'payload', 'createdAt', 'expiresAt'] as const;
 
 export const SEARCH_FILTER_SET_ATTRS = [

@@ -1,15 +1,45 @@
 import { useCallback } from 'react';
 import { Check, ExternalLink, RefreshCw, Unplug, UserRound } from 'lucide-react';
+import { normalizeUpworkFreelancerProfileUrl } from '../../lib/active-tab';
+import { getWebUrl } from '../../lib/extension-config';
+import type { ExtensionAction, FreelancerProfileSummary } from '../../types';
 
 type SyncScreenProps = Readonly<{
-  busy: boolean;
+  action: ExtensionAction;
   isProfilePage: boolean;
   tabTitle: string | null;
+  activeTabUrl: string | null;
+  profiles: readonly FreelancerProfileSummary[];
   onSync: () => Promise<void>;
   onDisconnect: () => Promise<void>;
 }>;
 
-export function SyncScreen({ busy, isProfilePage, tabTitle, onSync, onDisconnect }: SyncScreenProps) {
+function truncateUrl(url: string, max = 42): string {
+  if (url.length <= max) return url;
+  return `${url.slice(0, max - 1)}…`;
+}
+
+function formatUpdatedAt(value: string): string {
+  if (!value) return '';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '';
+  return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+}
+
+export function SyncScreen({
+  action,
+  isProfilePage,
+  tabTitle,
+  activeTabUrl,
+  profiles,
+  onSync,
+  onDisconnect,
+}: SyncScreenProps) {
+  const busy = action !== 'idle';
+  const hasProfiles = profiles.length > 0;
+  const normalizedTabUrl = normalizeUpworkFreelancerProfileUrl(activeTabUrl);
+  const syncing = action === 'syncing';
+
   const handleSync = useCallback(() => {
     void onSync();
   }, [onSync]);
@@ -38,31 +68,87 @@ export function SyncScreen({ busy, isProfilePage, tabTitle, onSync, onDisconnect
       </div>
 
       <div className="intro intro-start">
-        <h1>Sync an Upwork profile</h1>
-        <p>Import the profile open in your active tab as a draft for review in Constellation.</p>
+        <h1>{hasProfiles ? 'Resync an Upwork profile' : 'Sync an Upwork profile'}</h1>
+        <p>
+          {hasProfiles
+            ? 'Scrape the profile in your active tab. Matched profiles update after you confirm in Constellation.'
+            : 'Import the profile open in your active tab as a draft for review in Constellation.'}
+        </p>
       </div>
+
+      {hasProfiles ? (
+        <section className="profile-list" data-testid="extension-profile-list" aria-label="Saved profiles">
+          <h2 className="profile-list-heading">Saved profiles</h2>
+          <ul className="profile-list-items">
+            {profiles.map((profile) => {
+              const displayName = profile.label?.trim() || profile.title?.trim() || 'Untitled profile';
+              const normalizedProfileUrl = normalizeUpworkFreelancerProfileUrl(profile.profileUrl);
+              const isMatch =
+                normalizedTabUrl !== null &&
+                normalizedProfileUrl !== null &&
+                normalizedTabUrl === normalizedProfileUrl;
+              const updated = formatUpdatedAt(profile.updatedAt);
+              return (
+                <li
+                  key={profile.id}
+                  className={`profile-list-row${isMatch ? ' profile-list-row-match' : ''}`}
+                  data-testid={`extension-profile-row-${profile.id}`}
+                >
+                  <div className="profile-list-copy">
+                    <p className="profile-list-name">
+                      {displayName}
+                      {isMatch ? <span className="profile-match-pill">Current tab</span> : null}
+                    </p>
+                    {profile.profileUrl ? (
+                      <p className="profile-list-url">{truncateUrl(profile.profileUrl)}</p>
+                    ) : null}
+                    {updated ? <p className="profile-list-meta">Updated {updated}</p> : null}
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        </section>
+      ) : null}
 
       <section className={`card tab-card ${isProfilePage ? 'tab-ready' : ''}`}>
         <div className="profile-icon" aria-hidden="true">
           <UserRound size={19} />
         </div>
         <div className="tab-copy">
-          <h2>{isProfilePage ? 'Profile ready to sync' : 'Open an Upwork profile'}</h2>
+          <h2>{isProfilePage ? 'Profile ready' : 'Open an Upwork profile'}</h2>
           <p>{isProfilePage ? tabTitle || 'Upwork freelancer profile' : 'Navigate to upwork.com/freelancers/…'}</p>
         </div>
         {isProfilePage ? <Check className="ready-check" size={18} aria-hidden="true" /> : null}
       </section>
 
       <button
-        data-testid="extension-sync-profile"
+        data-testid={hasProfiles ? 'extension-resync-profile' : 'extension-sync-profile'}
         className="button button-primary sync-button"
         type="button"
         onClick={handleSync}
         disabled={busy || !isProfilePage}
       >
-        <RefreshCw className={busy ? 'spin' : ''} size={17} aria-hidden="true" />
-        {busy ? 'Syncing profile…' : 'Sync profile'}
+        <RefreshCw className={syncing ? 'spin' : ''} size={17} aria-hidden="true" />
+        {syncing
+          ? hasProfiles
+            ? 'Resyncing…'
+            : 'Syncing profile…'
+          : hasProfiles
+            ? 'Resync current tab'
+            : 'Sync profile'}
       </button>
+
+      <a
+        className="app-link"
+        data-testid="extension-open-draft"
+        href={`${getWebUrl()}/dashboard/upwork/profile/draft`}
+        target="_blank"
+        rel="noreferrer"
+      >
+        Review drafts in Constellation
+        <ExternalLink size={15} aria-hidden="true" />
+      </a>
 
       {!isProfilePage ? (
         <a

@@ -16,9 +16,10 @@ import {
   confirmFreelancerProfileImport,
   discardFreelancerProfileImport,
   listFreelancerProfiles,
+  type FreelancerProfileDto,
   type ProfileImportDraftDto,
 } from '@/services/freelancer-api';
-import { asRate, asString, asStringList } from '@/components/org/upwork-profile-form-utils';
+import { asRate, asString, asStringList, profileDisplayName } from '@/components/org/upwork-profile-form-utils';
 
 const PROFILE_BASE = `${DASHBOARD_BASE_PATH.org}/upwork/profile`;
 
@@ -32,11 +33,19 @@ function DraftPreviewField({ label, value }: { label: string; value: string }) {
   );
 }
 
+function draftTargetProfileId(payload: Record<string, unknown>): string | null {
+  return typeof payload.targetProfileId === 'string' ? payload.targetProfileId : null;
+}
+
 type LoadState =
   | Readonly<{ status: 'loading' }>
   | Readonly<{ status: 'error' }>
   | Readonly<{ status: 'empty' }>
-  | Readonly<{ status: 'ready'; draft: ProfileImportDraftDto }>;
+  | Readonly<{
+      status: 'ready';
+      draft: ProfileImportDraftDto;
+      profiles: FreelancerProfileDto[];
+    }>;
 
 export function UpworkProfileDraftView() {
   const t = useTranslations('org.upwork.profile');
@@ -64,7 +73,11 @@ export function UpworkProfileDraftView() {
         setLoadState({ status: 'empty' });
         return;
       }
-      setLoadState({ status: 'ready', draft: result.pendingDraft });
+      setLoadState({
+        status: 'ready',
+        draft: result.pendingDraft,
+        profiles: result.profiles,
+      });
     } catch (error) {
       setLoadState({ status: 'error' });
       showUserErrorToast(translateAuthRequestError(error, tErrors));
@@ -76,16 +89,18 @@ export function UpworkProfileDraftView() {
   }, [load]);
 
   const onConfirmImport = useCallback(async () => {
+    if (loadState.status !== 'ready') return;
+    const targetId = draftTargetProfileId(loadState.draft.payload);
     setBusy(true);
     try {
       const result = await confirmFreelancerProfileImport();
-      showUserSuccessToast(t('imported'));
+      showUserSuccessToast(targetId ? t('updatedFromDraft') : t('imported'));
       router.push(`${PROFILE_BASE}/${result.profile.id}`);
     } catch (error) {
       showUserErrorToast(translateAuthRequestError(error, tErrors));
       setBusy(false);
     }
-  }, [router, t, tErrors]);
+  }, [loadState, router, t, tErrors]);
 
   const onDiscardImport = useCallback(async () => {
     setBusy(true);
@@ -133,10 +148,25 @@ export function UpworkProfileDraftView() {
   }
 
   const draftPayload = loadState.draft.payload;
+  const targetId = draftTargetProfileId(draftPayload);
+  const matchedProfile = targetId
+    ? loadState.profiles.find((profile) => profile.id === targetId)
+    : undefined;
+  const matchedName = matchedProfile
+    ? profileDisplayName(matchedProfile, t('unnamedProfile'))
+    : t('unnamedProfile');
+  const isUpdate = Boolean(targetId);
 
   return (
-    <AdminPageLayout title={t('pendingDraft')} description={t('pendingDraftHint')} backLink={backLink}>
+    <AdminPageLayout
+      title={t('pendingDraft')}
+      description={isUpdate ? t('pendingDraftHintUpdate') : t('pendingDraftHintCreate')}
+      backLink={backLink}
+    >
       <div className="space-y-4 rounded-lg border border-border bg-card p-4" data-testid={TEST_IDS.upworkProfile.pendingDraft}>
+        <p className="text-sm text-foreground">
+          {isUpdate ? t('confirmWillUpdate', { name: matchedName }) : t('confirmWillCreate')}
+        </p>
         <p className="text-xs text-muted-foreground">
           {t('expiresAt', { value: new Date(loadState.draft.expiresAt).toLocaleString() })}
         </p>
@@ -163,7 +193,7 @@ export function UpworkProfileDraftView() {
               {t('discardImport')}
             </Button>
             <Button type="button" onClick={onConfirmImport} disabled={busy} testId={TEST_IDS.upworkProfile.confirmImport} fullWidth={false}>
-              {t('confirmImport')}
+              {isUpdate ? t('confirmUpdate') : t('confirmImport')}
             </Button>
           </FormActions>
         ) : null}

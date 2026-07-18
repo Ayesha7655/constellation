@@ -368,6 +368,76 @@ label {
   margin-top: 14px;
 }
 
+.profile-list {
+  margin-bottom: 14px;
+}
+
+.profile-list-heading {
+  margin: 0 0 8px;
+  font-size: 11px;
+  font-weight: 650;
+  color: var(--muted-foreground);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.profile-list-items {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 148px;
+  overflow-y: auto;
+}
+
+.profile-list-row {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 9px 11px;
+  background: var(--card);
+}
+
+.profile-list-row-match {
+  border-color: rgb(59 130 246 / 45%);
+  background: var(--accent);
+}
+
+.profile-list-copy {
+  min-width: 0;
+}
+
+.profile-list-name {
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 650;
+  color: var(--foreground);
+}
+
+.profile-match-pill {
+  border: 1px solid rgb(59 130 246 / 30%);
+  border-radius: 999px;
+  padding: 1px 7px;
+  background: rgb(59 130 246 / 10%);
+  color: var(--accent-foreground);
+  font-size: 9px;
+  font-weight: 650;
+}
+
+.profile-list-url,
+.profile-list-meta {
+  margin: 3px 0 0;
+  font-size: 10px;
+  line-height: 1.35;
+  color: var(--muted-foreground);
+  overflow-wrap: anywhere;
+}
+
 .feedback-wrap {
   padding: 0 18px 12px;
 }

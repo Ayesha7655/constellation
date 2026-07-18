@@ -52,9 +52,18 @@ export class FreelancerProfileController {
   @Post('import')
   @RequirePermissions(ORG.FREELANCER_PROFILE_UPDATE)
   @ApiJwtProtectedRoute({
-    summary: 'Import profile draft from Chrome extension',
-    ok: { schema: { example: { draft: { id: '…', expiresAt: '…' } } } },
+    summary: 'Import profile draft from Chrome extension (create or update match)',
+    ok: {
+      schema: {
+        example: {
+          draft: { id: '…', expiresAt: '…', payload: { targetProfileId: null, matchReason: null } },
+          targetProfileId: null,
+          matchReason: null,
+        },
+      },
+    },
     validation: true,
+    badRequest: { codes: [API_ERROR_CODES.FREELANCER_PROFILE_IMPORT_INVALID] },
   })
   importDraft(@Req() request: LocaleAwareRequest, @Body() dto: ImportFreelancerProfileDto) {
     return this.freelancerProfileService.importDraft(request.user?.sub, dto);
@@ -63,10 +72,15 @@ export class FreelancerProfileController {
   @Post('import/confirm')
   @RequirePermissions(ORG.FREELANCER_PROFILE_UPDATE)
   @ApiJwtProtectedRoute({
-    summary: 'Confirm pending draft into a new saved profile',
+    summary: 'Confirm pending draft — update matched profile or create new',
     ok: { schema: { example: { profile: { id: '…' } } } },
     validation: true,
-    notFound: { codes: [API_ERROR_CODES.FREELANCER_PROFILE_DRAFT_NOT_FOUND] },
+    notFound: {
+      codes: [
+        API_ERROR_CODES.FREELANCER_PROFILE_DRAFT_NOT_FOUND,
+        API_ERROR_CODES.FREELANCER_PROFILE_NOT_FOUND,
+      ],
+    },
   })
   confirmImport(@Req() request: LocaleAwareRequest, @Body() dto: ConfirmImportDto) {
     return this.freelancerProfileService.confirmImport(request.user?.sub, dto);

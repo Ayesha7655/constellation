@@ -5036,7 +5036,8 @@
       "freelancer_profile": {
         "not_found": "احفظ ملف Upwork قبل إنشاء عوامل التصفية.",
         "draft_not_found": "لا يوجد استيراد ملف معلّق للتأكيد.",
-        "org_required": "تحتاج إلى مؤسسة لمزامنة ملف Upwork."
+        "org_required": "تحتاج إلى مؤسسة لمزامنة ملف Upwork.",
+        "import_invalid": "هذه ليست صفحة ملف Upwork صالحة. افتح ملف مستقل وحاول مرة أخرى."
       },
       "search_filters": {
         "not_found": "لا توجد عوامل بحث محفوظة بعد.",
@@ -5639,10 +5640,16 @@
         "generateHint": "احفظ ملفك ثم أنشئ عوامل البحث.",
         "pendingDraft": "استيراد معلّق من إضافة Chrome",
         "pendingDraftHint": "راجع الملف المستخرج، ثم أكّده لإضافته كملف Upwork جديد.",
+        "pendingDraftHintCreate": "راجع الملف المستخرج، ثم أكّده لإنشاء ملف Upwork جديد.",
+        "pendingDraftHintUpdate": "راجع الملف المستخرج، ثم أكّده لتحديث ملف Upwork المطابق.",
+        "confirmWillCreate": "سيؤدي هذا إلى إنشاء ملف جديد.",
+        "confirmWillUpdate": "سيؤدي هذا إلى تحديث {name}.",
         "expiresAt": "ينتهي: {value}",
         "confirmImport": "تأكيد الاستيراد كملف جديد",
+        "confirmUpdate": "تحديث الملف",
         "discardImport": "تجاهل",
         "imported": "تم استيراد الملف من الإضافة.",
+        "updatedFromDraft": "تم تحديث الملف من مسودة الإضافة.",
         "selectProfile": "الملف النشط",
         "createProfile": "إضافة ملف فارغ",
         "deleteProfile": "حذف الملف",

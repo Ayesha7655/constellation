@@ -5036,7 +5036,8 @@
       "freelancer_profile": {
         "not_found": "Save an Upwork profile before generating filters.",
         "draft_not_found": "No pending profile import to confirm.",
-        "org_required": "You need an organization to sync an Upwork profile."
+        "org_required": "You need an organization to sync an Upwork profile.",
+        "import_invalid": "Not a valid Upwork profile page. Open a freelancer profile and try again."
       },
       "search_filters": {
         "not_found": "No search filters saved yet.",
@@ -5639,10 +5640,16 @@
         "generateHint": "Save your profile, then generate search filters.",
         "pendingDraft": "Pending import from Chrome extension",
         "pendingDraftHint": "Review the scraped profile, then confirm to add it as a new Upwork profile.",
+        "pendingDraftHintCreate": "Review the scraped profile, then confirm to create a new Upwork profile.",
+        "pendingDraftHintUpdate": "Review the scraped profile, then confirm to update the matched Upwork profile.",
+        "confirmWillCreate": "This will create a new profile.",
+        "confirmWillUpdate": "This will update {name}.",
         "expiresAt": "Expires: {value}",
         "confirmImport": "Confirm import as new profile",
+        "confirmUpdate": "Update profile",
         "discardImport": "Discard",
         "imported": "Profile imported from extension.",
+        "updatedFromDraft": "Profile updated from extension draft.",
         "selectProfile": "Active profile",
         "createProfile": "Add blank profile",
         "deleteProfile": "Delete profile",

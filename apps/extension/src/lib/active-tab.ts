@@ -2,19 +2,46 @@ import type { ScrapedProfile } from '../types';
 
 type ScrapeResponse = Readonly<{ ok: true; profile: ScrapedProfile }> | Readonly<{ ok: false; error?: string }>;
 
+const INVALID_PROFILE_PAGE = 'Not a valid Upwork profile page.';
+
 export async function getActiveTab(): Promise<chrome.tabs.Tab | null> {
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
   return tab ?? null;
 }
 
+/** Upwork host + `/freelancers/{slug}` — rejects the bare listing path. */
 export function isUpworkProfileTab(tab: chrome.tabs.Tab | null): boolean {
   if (!tab?.id || !tab.url) return false;
+  return normalizeUpworkFreelancerProfileUrl(tab.url) !== null;
+}
+
+export function normalizeUpworkFreelancerProfileUrl(raw: string | null | undefined): string | null {
+  if (typeof raw !== 'string' || !raw.trim()) return null;
   try {
-    const url = new URL(tab.url);
+    const url = new URL(raw.trim());
     const isUpworkHost = url.hostname === 'upwork.com' || url.hostname.endsWith('.upwork.com');
-    return isUpworkHost && url.pathname.startsWith('/freelancers/');
+    if (!isUpworkHost) return null;
+    const path = url.pathname.replace(/\/+$/, '') || '/';
+    const match = /^\/freelancers\/([^/]+)$/.exec(path);
+    const slug = match?.[1];
+    if (!slug) return null;
+    return `https://www.upwork.com/freelancers/${slug}`;
   } catch {
-    return false;
+    return null;
+  }
+}
+
+/** Client-side guard before calling import — backend remains source of truth. */
+export function assertValidScrapedProfile(profile: ScrapedProfile): void {
+  const profileUrl = normalizeUpworkFreelancerProfileUrl(profile.profileUrl);
+  if (!profileUrl) {
+    throw new Error(INVALID_PROFILE_PAGE);
+  }
+  const title = typeof profile.title === 'string' ? profile.title.trim() : '';
+  const overview = typeof profile.overview === 'string' ? profile.overview.trim() : '';
+  const skills = profile.skills.filter((s) => typeof s === 'string' && s.trim().length > 0);
+  if (!title && !overview && skills.length === 0) {
+    throw new Error(INVALID_PROFILE_PAGE);
   }
 }
 

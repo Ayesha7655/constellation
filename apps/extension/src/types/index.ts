@@ -25,12 +25,29 @@ export type ScrapedProfile = Readonly<{
   rawSnapshot: Record<string, unknown>;
 }>;
 
+export type FreelancerProfileSummary = Readonly<{
+  id: string;
+  label: string | null;
+  title: string | null;
+  profileUrl: string | null;
+  updatedAt: string;
+  source: string;
+}>;
+
+export type ImportDraftResult = Readonly<{
+  session: StoredSession;
+  targetProfileId: string | null;
+  matchReason: 'url' | 'uid' | null;
+}>;
+
 export type Feedback = Readonly<{
   tone: 'success' | 'error' | 'info';
   message: string;
 }>;
 
 export type ExtensionTheme = 'light' | 'dark';
+
+export type ExtensionAction = 'idle' | 'connecting' | 'syncing' | 'disconnecting';
 
 export type ConnectionState =
   | Readonly<{ status: 'loading' }>

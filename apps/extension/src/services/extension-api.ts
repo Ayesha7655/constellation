@@ -1,6 +1,11 @@
 import { getDefaultApiUrl } from '../lib/extension-config';
 import { clearSession, ensureDeviceId, getStoredSession, saveSession } from '../lib/extension-storage';
-import type { ScrapedProfile, StoredSession } from '../types';
+import type {
+  FreelancerProfileSummary,
+  ImportDraftResult,
+  ScrapedProfile,
+  StoredSession,
+} from '../types';
 
 type PairResponse = Readonly<{
   accessToken?: unknown;
@@ -11,6 +16,7 @@ class ExtensionApiError extends Error {
   constructor(
     message: string,
     readonly status: number,
+    readonly code?: string,
   ) {
     super(message);
   }
@@ -18,11 +24,12 @@ class ExtensionApiError extends Error {
 
 export type ExtensionOperation = 'connect' | 'sync' | 'disconnect';
 
-async function readError(response: Response): Promise<string> {
+async function readError(response: Response): Promise<{ message: string; code?: string }> {
   const body = (await response.json().catch(() => null)) as { code?: unknown; message?: unknown } | null;
-  if (typeof body?.code === 'string') return body.code;
-  if (typeof body?.message === 'string') return body.message;
-  return response.statusText || `Request failed (${response.status})`;
+  const code = typeof body?.code === 'string' ? body.code : undefined;
+  if (code) return { message: code, code };
+  if (typeof body?.message === 'string') return { message: body.message, code };
+  return { message: response.statusText || `Request failed (${response.status})` };
 }
 
 async function refreshSession(session: StoredSession): Promise<StoredSession | null> {
@@ -86,7 +93,10 @@ export async function connectWithCode(code: string): Promise<StoredSession> {
     },
     body: JSON.stringify({ code }),
   });
-  if (!response.ok) throw new ExtensionApiError(await readError(response), response.status);
+  if (!response.ok) {
+    const err = await readError(response);
+    throw new ExtensionApiError(err.message, response.status, err.code);
+  }
 
   const body = (await response.json()) as PairResponse;
   if (typeof body.accessToken !== 'string' || typeof body.refreshToken !== 'string') {
@@ -134,15 +144,61 @@ export async function disconnect(session: StoredSession): Promise<void> {
   }
 }
 
-export async function importProfileDraft(session: StoredSession, profile: ScrapedProfile): Promise<StoredSession> {
+export async function listFreelancerProfiles(
+  session: StoredSession,
+): Promise<{ session: StoredSession; profiles: FreelancerProfileSummary[] }> {
+  const result = await authenticatedFetch(session, '/organizations/me/freelancer-profiles');
+  if (!result.response.ok) {
+    const err = await readError(result.response);
+    throw new ExtensionApiError(err.message, result.response.status, err.code);
+  }
+
+  const body = (await result.response.json()) as { profiles?: unknown };
+  const profiles = Array.isArray(body.profiles)
+    ? body.profiles.flatMap((row): FreelancerProfileSummary[] => {
+        if (!row || typeof row !== 'object') return [];
+        const item = row as Record<string, unknown>;
+        if (typeof item.id !== 'string') return [];
+        return [
+          {
+            id: item.id,
+            label: typeof item.label === 'string' ? item.label : null,
+            title: typeof item.title === 'string' ? item.title : null,
+            profileUrl: typeof item.profileUrl === 'string' ? item.profileUrl : null,
+            updatedAt: typeof item.updatedAt === 'string' ? item.updatedAt : '',
+            source: typeof item.source === 'string' ? item.source : '',
+          },
+        ];
+      })
+    : [];
+
+  return { session: result.session, profiles };
+}
+
+export async function importProfileDraft(
+  session: StoredSession,
+  profile: ScrapedProfile,
+): Promise<ImportDraftResult> {
   const result = await authenticatedFetch(session, '/organizations/me/freelancer-profiles/import', {
     method: 'POST',
     body: JSON.stringify(profile),
   });
   if (!result.response.ok) {
-    throw new ExtensionApiError(await readError(result.response), result.response.status);
+    const err = await readError(result.response);
+    throw new ExtensionApiError(err.message, result.response.status, err.code);
   }
-  return result.session;
+
+  const body = (await result.response.json()) as {
+    targetProfileId?: unknown;
+    matchReason?: unknown;
+  };
+
+  return {
+    session: result.session,
+    targetProfileId: typeof body.targetProfileId === 'string' ? body.targetProfileId : null,
+    matchReason:
+      body.matchReason === 'url' || body.matchReason === 'uid' ? body.matchReason : null,
+  };
 }
 
 export function isAuthenticationError(error: unknown): boolean {
@@ -157,6 +213,13 @@ export function toFriendlyError(error: unknown, operation: ExtensionOperation): 
     if (error.status === 401) return 'Your connection expired. Connect the extension again.';
     if (operation === 'connect' && error.status === 404) {
       return 'The pairing code was not found or has expired.';
+    }
+    if (
+      operation === 'sync' &&
+      (error.code === 'api.freelancer_profile.import_invalid' ||
+        error.message === 'api.freelancer_profile.import_invalid')
+    ) {
+      return 'Not a valid Upwork profile page.';
     }
     return error.message;
   }

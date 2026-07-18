@@ -1,3 +1,5 @@
+import type { ProfileImportMatchReason } from '@constellation/shared';
+
 export type FreelancerProfileView = {
   id: string;
   orgId: string;
@@ -35,4 +37,6 @@ export type FreelancerProfileResult = {
 
 export type ImportDraftResult = {
   draft: PendingDraftView;
+  targetProfileId: string | null;
+  matchReason: ProfileImportMatchReason | null;
 };

@@ -1,5 +1,5 @@
 import { isUpworkProfileTab } from '../../lib/active-tab';
-import type { ConnectionState } from '../../types';
+import type { ConnectionState, ExtensionAction, FreelancerProfileSummary } from '../../types';
 import { ConnectScreen } from './connect-screen';
 import { LoadingScreen } from './loading-screen';
 import { SyncScreen } from './sync-screen';
@@ -7,7 +7,8 @@ import { SyncScreen } from './sync-screen';
 type ExtensionScreenProps = Readonly<{
   connection: ConnectionState;
   activeTab: chrome.tabs.Tab | null;
-  busy: boolean;
+  profiles: readonly FreelancerProfileSummary[];
+  action: ExtensionAction;
   onConnect: (code: string) => Promise<void>;
   onSync: () => Promise<void>;
   onDisconnect: () => Promise<void>;
@@ -16,7 +17,8 @@ type ExtensionScreenProps = Readonly<{
 export function ExtensionScreen({
   connection,
   activeTab,
-  busy,
+  profiles,
+  action,
   onConnect,
   onSync,
   onDisconnect,
@@ -25,13 +27,15 @@ export function ExtensionScreen({
     case 'loading':
       return <LoadingScreen />;
     case 'disconnected':
-      return <ConnectScreen busy={busy} onConnect={onConnect} />;
+      return <ConnectScreen busy={action === 'connecting'} onConnect={onConnect} />;
     case 'connected':
       return (
         <SyncScreen
-          busy={busy}
+          action={action}
           isProfilePage={isUpworkProfileTab(activeTab)}
           tabTitle={activeTab?.title ?? null}
+          activeTabUrl={activeTab?.url ?? null}
+          profiles={profiles}
           onSync={onSync}
           onDisconnect={onDisconnect}
         />

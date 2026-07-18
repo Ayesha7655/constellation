@@ -12,7 +12,8 @@ export function App() {
       <ExtensionScreen
         connection={controller.connection}
         activeTab={controller.activeTab}
-        busy={controller.busy}
+        profiles={controller.profiles}
+        action={controller.action}
         onConnect={controller.connect}
         onSync={controller.sync}
         onDisconnect={controller.disconnect}

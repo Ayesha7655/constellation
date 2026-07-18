@@ -106,7 +106,11 @@ export function UpworkProfileListView() {
                 <FileInput className="size-5" />
               </div>
               <p className="font-medium text-foreground">{t('pendingDraft')}</p>
-              <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">{t('pendingDraftHint')}</p>
+              <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">
+                {typeof pendingDraft.payload.targetProfileId === 'string'
+                  ? t('pendingDraftHintUpdate')
+                  : t('pendingDraftHintCreate')}
+              </p>
               <div className="mt-3">
                 <StatusBadge variant="amber" label={t('draftBadge')} />
               </div>

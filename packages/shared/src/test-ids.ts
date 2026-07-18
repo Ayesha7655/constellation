@@ -888,6 +888,15 @@ export const TEST_IDS = {
     copyCode: 'upwork-extension-copy-code',
     codeDisplay: 'upwork-extension-code-display',
   },
+  chromeExtension: {
+    connect: 'extension-connect',
+    disconnect: 'extension-disconnect',
+    syncProfile: 'extension-sync-profile',
+    resyncProfile: 'extension-resync-profile',
+    openUpwork: 'extension-open-upwork',
+    profileList: 'extension-profile-list',
+    profileRow: (id: string) => `extension-profile-row-${id}`,
+  },
   upworkJobs: {
     profileSelect: 'upwork-jobs-profile-select',
     runNow: 'upwork-jobs-run-now',

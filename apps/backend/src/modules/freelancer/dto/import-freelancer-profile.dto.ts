@@ -61,7 +61,9 @@ export class ImportFreelancerProfileDto {
   @IsString({ each: true })
   exclusions?: string[];
 
-  @ApiPropertyOptional()
+  @ApiPropertyOptional({
+    description: 'Upwork freelancer profile URL (`/freelancers/{slug}`). Required for a valid import.',
+  })
   @IsOptional()
   @IsString()
   @MaxLength(500)

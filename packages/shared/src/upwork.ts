@@ -232,3 +232,42 @@ export type GenerateUpworkFiltersResponse = {
 
 export type ScrapeRunStatus = 'queued' | 'running' | 'succeeded' | 'failed';
 export type ScrapeRunTrigger = 'manual' | 'schedule';
+
+export type ProfileImportMatchReason = 'url' | 'uid';
+
+/**
+ * Canonical Upwork freelancer profile URL for match/store.
+ * Strips query/hash and trailing slashes; requires `/freelancers/{slug}` (not the listing root).
+ */
+export function normalizeUpworkFreelancerProfileUrl(raw: string | null | undefined): string | null {
+  if (typeof raw !== 'string' || !raw.trim()) return null;
+  try {
+    const url = new URL(raw.trim());
+    const isUpworkHost = url.hostname === 'upwork.com' || url.hostname.endsWith('.upwork.com');
+    if (!isUpworkHost) return null;
+    const path = url.pathname.replace(/\/+$/, '') || '/';
+    const match = /^\/freelancers\/([^/]+)$/.exec(path);
+    const slug = match?.[1];
+    if (!slug) return null;
+    return `https://www.upwork.com/freelancers/${slug}`;
+  } catch {
+    return null;
+  }
+}
+
+export function isUpworkFreelancerProfileUrl(raw: string | null | undefined): boolean {
+  return normalizeUpworkFreelancerProfileUrl(raw) !== null;
+}
+
+/** Prefer `rawSnapshot.profile.uid` from the Chrome extension scraper. */
+export function extractUpworkUidFromRawSnapshot(raw: unknown): string | null {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return null;
+  const record = raw as Record<string, unknown>;
+  const profile = record.profile;
+  if (profile && typeof profile === 'object' && !Array.isArray(profile)) {
+    const uid = (profile as Record<string, unknown>).uid;
+    if (typeof uid === 'string' && uid.trim()) return uid.trim();
+  }
+  if (typeof record.uid === 'string' && record.uid.trim()) return record.uid.trim();
+  return null;
+}
