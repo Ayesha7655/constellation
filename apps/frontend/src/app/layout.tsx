@@ -28,8 +28,12 @@ export const metadata: Metadata = {
   title: 'Constellation',
   description: 'Constellation organization platform',
   icons: {
-    icon: [{ url: '/logo.png', type: 'image/png' }],
-    apple: [{ url: '/logo.png', type: 'image/png' }],
+    icon: [
+      { url: '/favicon.ico', sizes: 'any' },
+      { url: '/favicon.png', type: 'image/png' },
+    ],
+    shortcut: '/favicon.ico',
+    apple: [{ url: '/favicon.png', type: 'image/png' }],
   },
 };
 
