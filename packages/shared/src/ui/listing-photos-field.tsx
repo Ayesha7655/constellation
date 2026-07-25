@@ -71,7 +71,7 @@ function ListingPhotoThumb({ photo, index, total, labels, disabled, onMove, onRe
   }, [index, onRemove]);
 
   return (
-    <li className="relative overflow-hidden rounded-lg border border-border bg-card">
+    <li className="relative overflow-hidden rounded-xl bg-card shadow-sm">
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img src={previewUrl} alt="" className="aspect-square w-full object-cover" />
       {index === 0 ? (

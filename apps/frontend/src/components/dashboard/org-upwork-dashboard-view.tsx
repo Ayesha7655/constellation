@@ -85,7 +85,7 @@ export function OrgUpworkDashboardView() {
   return (
     <AdminPageLayout title={t('title')} description={t('description')}>
       {fresh ? (
-        <section className="rounded-lg border border-border bg-card p-6">
+        <section className="rounded-xl bg-card p-6 shadow-sm">
           <div
             className="mb-4 flex size-12 items-center justify-center rounded-md border border-sky-500/25 bg-sky-500/10 text-sky-700 dark:text-sky-300"
             aria-hidden
@@ -109,7 +109,7 @@ export function OrgUpworkDashboardView() {
         <div className="space-y-8">
           {data.profiles.length === 0 ? (
             <section
-              className="rounded-lg border border-border bg-card p-6"
+              className="rounded-xl bg-card p-6 shadow-sm"
               data-testid={TEST_IDS.upworkDashboard.syncHint}
             >
               <h2 className="text-lg font-semibold text-foreground">{t('syncTitle')}</h2>
@@ -155,7 +155,7 @@ export function OrgUpworkDashboardView() {
                     key={profile.id}
                     href={`${DASHBOARD_BASE_PATH.org}/upwork/profile/${profile.id}`}
                     data-testid={TEST_IDS.upworkDashboard.profileCard(profile.id)}
-                    className="rounded-lg border border-border bg-card p-4 transition-colors hover:bg-muted/40"
+                    className="rounded-xl bg-card p-4 shadow-sm transition-colors hover:bg-muted/40"
                   >
                     <div
                       className="mb-3 flex size-9 items-center justify-center rounded-md border border-sky-500/25 bg-sky-500/10 text-sky-700 dark:text-sky-300"
@@ -193,7 +193,7 @@ export function OrgUpworkDashboardView() {
                   {t('goJobs')}
                 </Link>
               </div>
-              <ul className="divide-y divide-border rounded-lg border border-border bg-card">
+              <ul className="divide-y divide-border rounded-xl bg-card shadow-sm">
                 {data.recentJobs.map((job) => (
                   <li key={job.id} className="flex items-center justify-between gap-3 px-4 py-3">
                     <a

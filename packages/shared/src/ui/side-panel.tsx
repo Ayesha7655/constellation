@@ -127,7 +127,7 @@ export function SidePanel({
         aria-describedby={description ? descriptionId : undefined}
         tabIndex={-1}
         className={cn(
-          'relative z-10 flex h-full w-full max-w-xl flex-col overflow-hidden border-border bg-card shadow-lg outline-none sm:border-s',
+          'relative z-10 flex h-full w-full max-w-xl flex-col overflow-hidden border-border bg-card shadow-sm outline-none sm:border-s',
           visible ? 'translate-x-0' : 'translate-x-full',
           open && !visible
             ? 'transition-none motion-reduce:translate-x-0'

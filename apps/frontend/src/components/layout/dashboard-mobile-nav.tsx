@@ -51,12 +51,12 @@ export function DashboardMobileNav({ config }: DashboardMobileNavProps) {
           />
           <aside
             id="dashboard-mobile-nav"
-            className="relative flex h-full w-64 flex-col border-e border-border bg-card shadow-md"
+            className="relative flex h-full w-64 flex-col border-e border-sidebar-border bg-sidebar text-sidebar-foreground shadow-md"
           >
-            <div className="flex items-center justify-end border-b border-border p-2">
+            <div className="flex items-center justify-end border-b border-sidebar-border p-2">
               <button
                 type="button"
-                className="rounded-md p-2 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                className="rounded-md p-2 text-sidebar-foreground/70 transition-colors hover:bg-white/10 hover:text-sidebar-foreground"
                 onClick={onCloseClick}
                 data-testid={TEST_IDS.dashboardNav.mobileClose}
                 aria-label={t('closeNav')}

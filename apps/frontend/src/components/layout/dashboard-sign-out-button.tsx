@@ -42,10 +42,10 @@ export function DashboardSignOutButton({ onNavigate }: DashboardSignOutButtonPro
       data-testid={TEST_IDS.dashboardNav.signOut}
       className={cn(
         'flex w-full items-center gap-2.5 rounded-md px-3 py-2 text-sm transition-colors',
-        'text-muted-foreground hover:bg-muted hover:text-foreground',
+        'text-sidebar-foreground/75 hover:bg-white/10 hover:text-sidebar-foreground',
       )}
     >
-      <LogOut className="size-4 shrink-0 text-primary/70" aria-hidden />
+      <LogOut className="size-4 shrink-0 text-sidebar-foreground/70" aria-hidden />
       <span>{tNav('signOut')}</span>
     </button>
   );

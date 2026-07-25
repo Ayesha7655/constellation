@@ -73,14 +73,17 @@ function renderNavItem(
         'flex items-center gap-2.5 rounded-md px-3 py-2 text-sm transition-colors',
         indentClassName,
         active
-          ? 'bg-accent font-medium text-accent-foreground'
-          : 'text-muted-foreground hover:bg-muted hover:text-foreground',
+          ? 'bg-sidebar-accent font-medium text-sidebar-accent-foreground'
+          : 'text-sidebar-foreground/75 hover:bg-white/10 hover:text-sidebar-foreground',
       )}
       aria-current={active ? 'page' : undefined}
     >
       {Icon ? (
         <Icon
-          className={cn('size-4 shrink-0', active ? 'text-accent-foreground' : 'text-primary/70')}
+          className={cn(
+            'size-4 shrink-0',
+            active ? 'text-sidebar-accent-foreground' : 'text-sidebar-foreground/70',
+          )}
           aria-hidden
         />
       ) : null}
@@ -192,8 +195,8 @@ export function DashboardSidebar({ config, onNavigate }: DashboardSidebarProps) 
                   aria-expanded={isExpanded}
                   className={cn(
                     'flex w-full items-center justify-between gap-2 rounded-md px-3 py-1.5 text-start',
-                    'text-xs font-medium uppercase tracking-wide text-muted-foreground transition-colors',
-                    'hover:bg-muted/60 hover:text-foreground',
+                    'text-xs font-medium uppercase tracking-wide text-sidebar-foreground/60 transition-colors',
+                    'hover:bg-white/10 hover:text-sidebar-foreground',
                   )}
                   aria-label={
                     isExpanded
@@ -232,8 +235,8 @@ export function DashboardSidebar({ config, onNavigate }: DashboardSidebarProps) 
                           aria-expanded={isSubGroupExpanded}
                           className={cn(
                             'flex w-full items-center justify-between gap-2 rounded-md px-3 py-1.5 ps-6 text-start',
-                            'text-xs font-medium text-muted-foreground transition-colors',
-                            'hover:bg-muted/60 hover:text-foreground',
+                            'text-xs font-medium text-sidebar-foreground/60 transition-colors',
+                            'hover:bg-white/10 hover:text-sidebar-foreground',
                           )}
                           aria-label={
                             isSubGroupExpanded
@@ -268,7 +271,7 @@ export function DashboardSidebar({ config, onNavigate }: DashboardSidebarProps) 
           );
         })}
       </nav>
-      <div className="shrink-0 border-t border-border p-4">
+      <div className="shrink-0 border-t border-sidebar-border p-4">
         <DashboardSignOutButton onNavigate={onNavigate} />
       </div>
     </div>

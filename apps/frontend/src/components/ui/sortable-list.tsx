@@ -51,7 +51,7 @@ function SortableRow({
         transition,
       }}
       className={cn(
-        'flex items-stretch gap-2 rounded-lg border border-border bg-card',
+        'flex items-stretch gap-2 rounded-xl bg-card shadow-sm',
         isDragging && 'z-10 opacity-90 shadow-md',
         itemClassName,
       )}

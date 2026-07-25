@@ -17,7 +17,7 @@ export function DashboardShell({ config, children }: DashboardShellProps) {
     <DashboardBreadcrumbsProvider>
       <DashboardRouteBreadcrumbs config={config} />
       <div className="flex h-full min-h-0 w-full overflow-hidden">
-        <aside className="hidden h-full w-64 shrink-0 overflow-hidden border-e border-border bg-card md:block">
+        <aside className="hidden h-full w-64 shrink-0 overflow-hidden border-e border-sidebar-border bg-sidebar text-sidebar-foreground md:block">
           <DashboardSidebar config={config} />
         </aside>
         <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">

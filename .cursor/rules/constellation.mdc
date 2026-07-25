@@ -597,7 +597,9 @@ When a catalog or reference entity has a **stable, unique text identifier** (slu
 
 All UI styling uses **tweakcn** themes with semantic design tokens. Do not hardcode colors like `text-zinc-900`, `bg-white`, or hex values in components.
 
-**Do not edit theme CSS token values** (`apps/frontend/src/themes/tweakcn/themes/*.css`, `:root` / `.dark` variables) unless the user explicitly asks. Prefer component-level semantic classes (`bg-primary`, `dark:bg-accent`, …) for one-off light/dark differences.
+**Do not edit theme CSS token values** (`apps/frontend/src/themes/tweakcn/themes/*.css`, `:root` / `.dark` variables) unless the user explicitly asks (e.g. brand palette updates). Prefer component-level semantic classes (`bg-primary`, `dark:bg-accent`, …) for one-off light/dark differences.
+
+Brand light tokens (Constellation): primary deep purple `#4C1D95` / hover `#3B0764` / light `#F3E8FF`, background `#F3EEF9`, surface/card `#FFFFFF` (distinct from page chrome — use soft `shadow-sm`, **no card borders**), surface-alt `#EBE3F5`, border `#E4DAF0` (inputs/dividers only), text `#1E293B` / `#64748B`, success `#34C38F`, warning `#F5B942`, error `#F56565`. Light-mode sidebar uses primary (`bg-sidebar`). Radius: controls ~10px (`rounded-md`), cards ~16px (`rounded-xl`). Soft shadow `0 4px 12px rgba(15,23,42,0.06)`. Focus ring primary at ~20% opacity. Transitions ~150–200ms ease-out.
 
 ### Structure
 

@@ -111,7 +111,7 @@ export function Dialog({
         aria-describedby={description ? descriptionId : undefined}
         tabIndex={-1}
         className={cn(
-          'relative z-10 flex w-full flex-col overflow-hidden rounded-lg border border-border bg-card shadow-lg outline-none',
+          'relative z-10 flex w-full flex-col overflow-hidden rounded-xl border-0 bg-card shadow-sm outline-none',
           dialogSizeClasses[size],
           className,
         )}

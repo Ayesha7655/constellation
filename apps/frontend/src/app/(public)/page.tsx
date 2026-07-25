@@ -28,12 +28,12 @@ export default async function HomePage() {
         </div>
 
         <section className="grid gap-4 sm:grid-cols-2">
-          <article className="rounded-lg border border-border bg-card p-6 shadow-sm">
+          <article className="rounded-xl bg-card p-6 shadow-sm">
             <h2 className="text-sm font-medium text-muted-foreground">{t('frontendLabel')}</h2>
             <p className="mt-2 text-2xl font-semibold text-card-foreground">{t('frontendTitle')}</p>
             <p className="mt-2 text-sm text-muted-foreground">{t('frontendDescription')}</p>
           </article>
-          <article className="rounded-lg border border-border bg-card p-6 shadow-sm">
+          <article className="rounded-xl bg-card p-6 shadow-sm">
             <h2 className="text-sm font-medium text-muted-foreground">{t('backendLabel')}</h2>
             <p className="mt-2 text-2xl font-semibold text-card-foreground">{t('backendTitle')}</p>
             <p className="mt-2 text-sm text-muted-foreground">{t('backendDescription')}</p>

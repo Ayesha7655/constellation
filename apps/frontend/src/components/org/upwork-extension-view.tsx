@@ -101,7 +101,7 @@ export function UpworkExtensionView() {
 
   return (
     <AdminPageLayout title={t('title')} description={t('description')}>
-      <section className="mb-8 space-y-3 rounded-lg border border-border bg-card p-4">
+      <section className="mb-8 space-y-3 rounded-xl bg-card p-4 shadow-sm">
         <h2 className="text-base font-semibold text-foreground">{t('oneClick')}</h2>
         <p className="text-sm text-muted-foreground">{t('oneClickHint')}</p>
         <FormActions className="justify-end">
@@ -111,7 +111,7 @@ export function UpworkExtensionView() {
         </FormActions>
       </section>
 
-      <section className="mb-8 space-y-3 rounded-lg border border-border bg-card p-4">
+      <section className="mb-8 space-y-3 rounded-xl bg-card p-4 shadow-sm">
         <h2 className="text-base font-semibold text-foreground">{t('codeTitle')}</h2>
         <p className="text-sm text-muted-foreground">{t('codeHint')}</p>
         {code ? (

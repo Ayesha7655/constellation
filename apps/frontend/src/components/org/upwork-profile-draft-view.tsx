@@ -163,7 +163,7 @@ export function UpworkProfileDraftView() {
       description={isUpdate ? t('pendingDraftHintUpdate') : t('pendingDraftHintCreate')}
       backLink={backLink}
     >
-      <div className="space-y-4 rounded-lg border border-border bg-card p-4" data-testid={TEST_IDS.upworkProfile.pendingDraft}>
+      <div className="space-y-4 rounded-xl bg-card p-4 shadow-sm" data-testid={TEST_IDS.upworkProfile.pendingDraft}>
         <p className="text-sm text-foreground">
           {isUpdate ? t('confirmWillUpdate', { name: matchedName }) : t('confirmWillCreate')}
         </p>

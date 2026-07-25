@@ -373,7 +373,7 @@ export function UpworkProposalsView() {
             </label>
           </div>
 
-          <section className="space-y-3 rounded-lg border border-border bg-card p-4">
+          <section className="space-y-3 rounded-xl bg-card p-4 shadow-sm">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div className="min-w-0 space-y-1">
                 <h2 className="text-sm font-semibold text-foreground">{t('examplesTitle')}</h2>
@@ -452,7 +452,7 @@ export function UpworkProposalsView() {
             </ul>
           </section>
 
-          <section className="space-y-3 rounded-lg border border-border bg-card p-4">
+          <section className="space-y-3 rounded-xl bg-card p-4 shadow-sm">
             <h2 className="text-sm font-semibold text-foreground">{t('styleTitle')}</h2>
             <p className="text-sm text-muted-foreground">
               {hasStyleContent ? t('styleHint') : t('styleEmptyHint')}

@@ -1,21 +1,24 @@
 :root {
   color-scheme: light;
-  --background: #ffffff;
-  --foreground: #333333;
+  --background: #f3eef9;
+  --foreground: #1e293b;
   --card: #ffffff;
-  --muted: #f9fafb;
-  --muted-foreground: #6b7280;
-  --primary: #3b82f6;
+  --muted: #ebe3f5;
+  --muted-foreground: #64748b;
+  --primary: #4c1d95;
+  --primary-hover: #3b0764;
   --primary-foreground: #ffffff;
-  --accent: #e0f2fe;
-  --accent-foreground: #1e3a8a;
-  --destructive: #ef4444;
-  --border: #e5e7eb;
-  --ring: #3b82f6;
-  --success: #059669;
+  --accent: #f3e8ff;
+  --accent-foreground: #4c1d95;
+  --destructive: #f56565;
+  --border: #e4daf0;
+  --ring: #4c1d95;
+  --success: #34c38f;
   --success-soft: #ecfdf5;
   --success-border: #a7f3d0;
-  --radius: 6px;
+  --radius: 10px;
+  --radius-card: 16px;
+  --shadow-soft: 0 4px 12px rgba(15, 23, 42, 0.06);
   font-family:
     Inter,
     ui-sans-serif,
@@ -73,12 +76,12 @@ a {
   place-items: center;
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  background: var(--background);
+  background: var(--card);
   color: var(--muted-foreground);
   cursor: pointer;
   transition:
-    color 150ms ease,
-    background-color 150ms ease;
+    color 180ms ease-out,
+    background-color 180ms ease-out;
 }
 
 .theme-toggle:hover {
@@ -88,7 +91,7 @@ a {
 
 .theme-toggle:focus-visible {
   outline: none;
-  box-shadow: 0 0 0 3px rgb(59 130 246 / 20%);
+  box-shadow: 0 0 0 3px rgba(91, 108, 255, 0.2);
 }
 
 .hero-icon,
@@ -97,9 +100,9 @@ a {
   display: grid;
   flex: 0 0 auto;
   place-items: center;
-  border: 1px solid rgb(59 130 246 / 25%);
-  background: rgb(59 130 246 / 10%);
-  color: #2563eb;
+  border: 1px solid rgba(91, 108, 255, 0.25);
+  background: rgba(91, 108, 255, 0.1);
+  color: var(--primary);
 }
 
 .brand-mark {
@@ -181,9 +184,9 @@ footer {
 
 .card {
   border: 1px solid var(--border);
-  border-radius: var(--radius);
+  border-radius: var(--radius-card);
   background: var(--card);
-  box-shadow: 0 1px 3px rgb(0 0 0 / 5%);
+  box-shadow: var(--shadow-soft);
 }
 
 .connect-card {
@@ -229,17 +232,20 @@ label {
   border: 1px solid var(--border);
   border-radius: var(--radius);
   outline: none;
-  background: var(--background);
+  background: var(--card);
   color: var(--foreground);
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
   font-size: 20px;
   letter-spacing: 0.28em;
   text-align: center;
+  transition:
+    border-color 180ms ease-out,
+    box-shadow 180ms ease-out;
 }
 
 .code-input:focus {
   border-color: var(--ring);
-  box-shadow: 0 0 0 3px rgb(59 130 246 / 15%);
+  box-shadow: 0 0 0 3px rgba(91, 108, 255, 0.2);
 }
 
 .button {
@@ -256,8 +262,9 @@ label {
   font-size: 12px;
   font-weight: 600;
   transition:
-    opacity 150ms ease,
-    transform 150ms ease;
+    background-color 180ms ease-out,
+    opacity 180ms ease-out,
+    transform 180ms ease-out;
 }
 
 .button:not(:disabled):active {
@@ -276,7 +283,7 @@ label {
 }
 
 .button-primary:not(:disabled):hover {
-  opacity: 0.9;
+  background: var(--primary-hover);
 }
 
 .app-link,
@@ -400,7 +407,7 @@ label {
 }
 
 .profile-list-row-match {
-  border-color: rgb(59 130 246 / 45%);
+  border-color: rgba(91, 108, 255, 0.45);
   background: var(--accent);
 }
 
@@ -420,10 +427,10 @@ label {
 }
 
 .profile-match-pill {
-  border: 1px solid rgb(59 130 246 / 30%);
+  border: 1px solid rgba(91, 108, 255, 0.3);
   border-radius: 999px;
   padding: 1px 7px;
-  background: rgb(59 130 246 / 10%);
+  background: rgba(91, 108, 255, 0.1);
   color: var(--accent-foreground);
   font-size: 9px;
   font-weight: 650;
@@ -465,14 +472,14 @@ label {
 }
 
 .feedback-error {
-  border-color: rgb(239 68 68 / 30%);
-  background: rgb(239 68 68 / 7%);
-  color: #b91c1c;
+  border-color: rgba(245, 101, 101, 0.3);
+  background: rgba(245, 101, 101, 0.08);
+  color: #dc2626;
 }
 
 .feedback-info {
-  border-color: rgb(59 130 246 / 25%);
-  background: rgb(59 130 246 / 7%);
+  border-color: rgba(91, 108, 255, 0.25);
+  background: rgba(91, 108, 255, 0.07);
   color: var(--accent-foreground);
 }
 
@@ -528,17 +535,20 @@ footer {
 
 :root[data-theme='dark'] {
   color-scheme: dark;
-  --background: #171717;
-  --foreground: #e5e5e5;
-  --card: #262626;
-  --muted: #1f1f1f;
-  --muted-foreground: #a3a3a3;
-  --accent: #1e3a8a;
-  --accent-foreground: #bfdbfe;
-  --border: #404040;
-  --success: #6ee7b7;
-  --success-soft: rgb(5 150 105 / 12%);
-  --success-border: rgb(16 185 129 / 35%);
+  --background: #0b1220;
+  --foreground: #f1f5f9;
+  --card: #151c2c;
+  --muted: #1a2234;
+  --muted-foreground: #94a3b8;
+  --primary: #7c3aed;
+  --primary-hover: #8b5cf6;
+  --accent: #2e1065;
+  --accent-foreground: #e9d5ff;
+  --border: #2a3548;
+  --success: #34c38f;
+  --success-soft: rgba(52, 195, 143, 0.12);
+  --success-border: rgba(52, 195, 143, 0.35);
+  --shadow-soft: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
 
 :root[data-theme='dark'] .feedback-error {

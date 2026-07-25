@@ -122,7 +122,7 @@ export function UpworkProfileListView() {
               key={profile.id}
               href={`${PROFILE_BASE}/${profile.id}`}
               data-testid={TEST_IDS.upworkProfile.profileCard(profile.id)}
-              className="rounded-lg border border-border bg-card p-4 text-start transition-colors hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              className="rounded-xl bg-card p-4 text-start shadow-sm transition-colors hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
               <div
                 className="mb-3 flex size-10 items-center justify-center rounded-md border border-sky-500/25 bg-sky-500/10 text-sky-700 dark:text-sky-300"

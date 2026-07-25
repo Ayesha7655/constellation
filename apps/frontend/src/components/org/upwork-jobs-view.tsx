@@ -550,7 +550,7 @@ export function UpworkJobsView() {
       </div>
 
       {latestRun ? (
-        <div className="mb-4 shrink-0 rounded-lg border border-border bg-card p-3 text-sm" data-testid={TEST_IDS.upworkJobs.runStatus}>
+        <div className="mb-4 shrink-0 rounded-xl bg-card p-3 text-sm shadow-sm" data-testid={TEST_IDS.upworkJobs.runStatus}>
           <div className="flex flex-wrap items-center gap-2">
             <span className="text-muted-foreground">{t('latestRun')}</span>
             <StatusBadge variant={runStatusVariant(latestRun.status)} label={t(`status.${latestRun.status}`)} />
@@ -680,7 +680,7 @@ export function UpworkJobsView() {
               <p className="text-sm font-medium text-foreground">{t('runHistory')}</p>
               <ul className="space-y-2">
                 {recentRuns.map((run) => (
-                  <li key={run.id} className="rounded-lg border border-border bg-card p-3 text-sm">
+                  <li key={run.id} className="rounded-xl bg-card p-3 text-sm shadow-sm">
                     <div className="flex flex-wrap items-center gap-2">
                       <StatusBadge variant={runStatusVariant(run.status)} label={t(`status.${run.status}`)} />
                       <span className="text-muted-foreground">{new Date(run.createdAt).toLocaleString()}</span>
