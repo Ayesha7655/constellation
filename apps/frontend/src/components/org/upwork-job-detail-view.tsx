@@ -26,6 +26,10 @@ import { useDashboardBreadcrumbs } from '@/hooks/use-dashboard-breadcrumbs';
 import { Link } from '@/i18n/navigation';
 import { showUserErrorToast } from '@/i18n/translate-user-message';
 import { cn } from '@/lib/utils';
+import {
+  formatUpworkBreakdownPart,
+  formatUpworkScoreOutOfTen,
+} from '@/lib/upwork-score-display';
 import { translateAuthRequestError } from '@/lib/user-messages';
 import {
   getUpworkJob,
@@ -219,13 +223,13 @@ export function UpworkJobDetailView({ profileId, jobId }: UpworkJobDetailViewPro
     );
   }
 
-  const postedLabel =
-    job.postedTime ?? (job.postedAt ? new Date(job.postedAt).toLocaleString() : null);
+  const postedAtLabel = job.postedAt ? new Date(job.postedAt).toLocaleString() : null;
+  const postedRelative = job.postedTime?.trim() || null;
   const hasClientInfo = Boolean(job.clientLocation || job.clientRating != null || job.clientSpent);
   const hasActivity = Boolean(job.scrapedAt);
   const band = resolveUpworkRelevancyBand(job.relevancyScore, thresholds);
   const breakdownTitle = scoreBreakdown
-    .map((part) => `${t(`breakdown.${part.key}`)}: ${part.contribution} (w${part.weight})`)
+    .map((part) => `${t(`breakdown.${part.key}`)}: ${formatUpworkBreakdownPart(part.contribution, part.weight)}`)
     .join('\n');
 
   return (
@@ -323,14 +327,16 @@ export function UpworkJobDetailView({ profileId, jobId }: UpworkJobDetailViewPro
           <SideSection title={t('detail.match')} className={matchCardClass(band)}>
             <div title={breakdownTitle || undefined}>
               <p className="text-xs font-medium text-muted-foreground">{t('detail.relevancyScore')}</p>
-              <p className="mt-1 text-3xl font-semibold tabular-nums text-foreground">{job.relevancyScore}</p>
+              <p className="mt-1 text-3xl font-semibold tabular-nums text-foreground">
+                {formatUpworkScoreOutOfTen(job.relevancyScore)}/10
+              </p>
               {scoreBreakdown.length > 0 ? (
                 <ul className="mt-3 space-y-1 text-xs text-muted-foreground">
                   {scoreBreakdown.map((part) => (
                     <li key={part.key} className="flex items-center justify-between gap-2">
                       <span>{t(`breakdown.${part.key}`)}</span>
                       <span className="tabular-nums text-foreground">
-                        {part.contribution} · w{part.weight}
+                        {formatUpworkBreakdownPart(part.contribution, part.weight)}
                       </span>
                     </li>
                   ))}
@@ -353,7 +359,8 @@ export function UpworkJobDetailView({ profileId, jobId }: UpworkJobDetailViewPro
               label={t('detail.proposals')}
               value={job.proposals != null ? String(job.proposals) : null}
             />
-            <MetaRow icon={<Clock className="size-4" />} label={t('detail.posted')} value={postedLabel} />
+            <MetaRow icon={<Clock className="size-4" />} label={t('detail.posted')} value={postedRelative} />
+            <MetaRow icon={<Clock className="size-4" />} label={t('detail.postedAt')} value={postedAtLabel} />
           </SideSection>
 
           {hasClientInfo ? (

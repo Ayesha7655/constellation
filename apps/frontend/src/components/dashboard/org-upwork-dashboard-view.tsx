@@ -11,6 +11,7 @@ import { useDashboardSession } from '@/contexts/dashboard-session-context';
 import { showUserErrorToast } from '@/i18n/translate-user-message';
 import { cn } from '@/lib/utils';
 import { upworkRelevancyBadgeVariant } from '@/lib/upwork-relevancy-badge';
+import { formatUpworkScoreOutOfTen } from '@/lib/upwork-score-display';
 import { translateAuthRequestError } from '@/lib/user-messages';
 import { getUpworkOverview, type UpworkOverviewDto } from '@/services/freelancer-api';
 
@@ -210,7 +211,7 @@ export function OrgUpworkDashboardView() {
                             job.relevancyScore,
                             data.scoringThresholds,
                           )}
-                          label={String(job.relevancyScore)}
+                          label={formatUpworkScoreOutOfTen(job.relevancyScore)}
                         />
                         <p className="text-xs text-muted-foreground">
                           {job.budget ?? t('budgetUnknown')}

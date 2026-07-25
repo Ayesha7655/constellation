@@ -88,6 +88,10 @@ export function normalizeUpworkJobUrl(url: string): string {
 }
 
 function parsePostedAt(value: unknown): Date | null {
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    const fromNumber = new Date(value);
+    return Number.isFinite(fromNumber.getTime()) ? fromNumber : null;
+  }
   if (typeof value !== 'string' || !value.trim()) return null;
   const parsed = Date.parse(value);
   return Number.isFinite(parsed) ? new Date(parsed) : null;

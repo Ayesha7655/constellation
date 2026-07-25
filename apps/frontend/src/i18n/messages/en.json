@@ -5065,6 +5065,10 @@
         "not_found": "That job was not found.",
         "not_in_library": "This Upwork job is not in Constellation yet. Run a job search for your profile first."
       },
+      "upwork_scoring": {
+        "weights_invalid": "Scoring weights must be whole numbers that add up to 100.",
+        "thresholds_invalid": "Color thresholds must be between 0 and 100 with green > orange > yellow."
+      },
       "proposal": {
         "not_found": "That proposal draft was not found.",
         "generate_failed": "Could not generate a proposal. Try again.",
@@ -5788,11 +5792,11 @@
       },
       "scoring": {
         "title": "Relevancy scoring",
-        "description": "Control how job matches are weighted and which score colors appear in the jobs list.",
+        "description": "Control how job matches are weighted and which score colors appear in the jobs list. Scores and weights use a 0–10 scale.",
         "weightsTitle": "Signal weights",
-        "weightsHint": "Weights must add up to 100. Current sum: {sum}.",
+        "weightsHint": "Weights must add up to 10. Current sum: {sum}.",
         "thresholdsTitle": "Score colors",
-        "thresholdsHint": "Green ≥ green threshold, orange ≥ orange, yellow ≥ yellow, otherwise red. Thresholds must decrease in that order.",
+        "thresholdsHint": "Green ≥ green threshold, orange ≥ orange, yellow ≥ yellow, otherwise red. Thresholds are on a 0–10 scale and must decrease in that order.",
         "rescoreHint": "Existing job scores update on the next scrape run for each profile.",
         "save": "Save scoring",
         "saved": "Scoring settings saved.",
@@ -5813,8 +5817,8 @@
         },
         "validation": {
           "required": "Required",
-          "range": "Enter a whole number from 0 to 100",
-          "weightsSum": "Weights must add up to 100",
+          "range": "Enter a number from 0 to 10",
+          "weightsSum": "Weights must add up to 10",
           "thresholdsOrder": "Green must be greater than orange, and orange greater than yellow"
         }
       },
@@ -5854,6 +5858,7 @@
           "budget": "Budget",
           "clientLocation": "Client location",
           "posted": "Posted",
+          "postedAt": "Posted at",
           "scrapedAt": "Scraped",
           "skills": "Skills required",
           "skillsLegendMatched": "On your profile",

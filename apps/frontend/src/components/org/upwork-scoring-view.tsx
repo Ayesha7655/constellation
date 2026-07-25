@@ -12,11 +12,14 @@ import { DetailRefreshButton } from '@/components/ui/detail-refresh-button';
 import { useDashboardSession } from '@/contexts/dashboard-session-context';
 import { showUserErrorToast, showUserSuccessToast } from '@/i18n/translate-user-message';
 import { upworkRelevancyBadgeVariant } from '@/lib/upwork-relevancy-badge';
+import { formatUpworkScoreOutOfTen } from '@/lib/upwork-score-display';
 import { translateAuthRequestError } from '@/lib/user-messages';
 import {
   createUpworkScoringSchema,
   scoringConfigToFormValues,
+  scoringFormThresholdsApi,
   scoringFormToPayload,
+  scoringFormWeightSum,
   type UpworkScoringFormValues,
 } from '@/lib/validation/upwork-scoring-schemas';
 import {
@@ -111,25 +114,17 @@ export function UpworkScoringView() {
   }, [t, tErrors]);
 
   const renderForm = useCallback(({ isSubmitting, values }: { isSubmitting: boolean; values: UpworkScoringFormValues }) => {
-    const weightSum =
-      (Number.parseInt(values.skills, 10) || 0) +
-      (Number.parseInt(values.keywords, 10) || 0) +
-      (Number.parseInt(values.budget, 10) || 0) +
-      (Number.parseInt(values.location, 10) || 0) +
-      (Number.parseInt(values.clientRating, 10) || 0) +
-      (Number.parseInt(values.proposals, 10) || 0);
-    const previewThresholds = {
-      green: Number.parseInt(values.green, 10) || 80,
-      orange: Number.parseInt(values.orange, 10) || 60,
-      yellow: Number.parseInt(values.yellow, 10) || 40,
-    };
+    const weightSum = scoringFormWeightSum(values);
+    const previewThresholds = scoringFormThresholdsApi(values);
 
     return (
       <Form id={formId} className="space-y-8">
         <section className="space-y-3">
           <div>
             <h3 className="text-sm font-semibold text-foreground">{t('weightsTitle')}</h3>
-            <p className="text-sm text-muted-foreground">{t('weightsHint', { sum: weightSum })}</p>
+            <p className="text-sm text-muted-foreground">
+              {t('weightsHint', { sum: formatUpworkScoreOutOfTen(weightSum * 10) })}
+            </p>
           </div>
           <FormGrid>
             <FormikTextField name="skills" label={t('weights.skills')} testId={TEST_IDS.upworkScoring.weightSkills} readOnly={!canUpdate} />
@@ -152,10 +147,22 @@ export function UpworkScoringView() {
             <FormikTextField name="yellow" label={t('thresholds.yellow')} testId={TEST_IDS.upworkScoring.thresholdYellow} readOnly={!canUpdate} />
             <FormGridFullWidth>
               <div className="flex flex-wrap gap-2 pt-1">
-                <StatusBadge variant={upworkRelevancyBadgeVariant(previewThresholds.green, previewThresholds)} label={`${previewThresholds.green}+`} />
-                <StatusBadge variant={upworkRelevancyBadgeVariant(previewThresholds.orange, previewThresholds)} label={`${previewThresholds.orange}+`} />
-                <StatusBadge variant={upworkRelevancyBadgeVariant(previewThresholds.yellow, previewThresholds)} label={`${previewThresholds.yellow}+`} />
-                <StatusBadge variant={upworkRelevancyBadgeVariant(Math.max(0, previewThresholds.yellow - 1), previewThresholds)} label={`<${previewThresholds.yellow}`} />
+                <StatusBadge
+                  variant={upworkRelevancyBadgeVariant(previewThresholds.green, previewThresholds)}
+                  label={`${formatUpworkScoreOutOfTen(previewThresholds.green)}+`}
+                />
+                <StatusBadge
+                  variant={upworkRelevancyBadgeVariant(previewThresholds.orange, previewThresholds)}
+                  label={`${formatUpworkScoreOutOfTen(previewThresholds.orange)}+`}
+                />
+                <StatusBadge
+                  variant={upworkRelevancyBadgeVariant(previewThresholds.yellow, previewThresholds)}
+                  label={`${formatUpworkScoreOutOfTen(previewThresholds.yellow)}+`}
+                />
+                <StatusBadge
+                  variant={upworkRelevancyBadgeVariant(Math.max(0, previewThresholds.yellow - 1), previewThresholds)}
+                  label={`<${formatUpworkScoreOutOfTen(previewThresholds.yellow)}`}
+                />
               </div>
             </FormGridFullWidth>
           </FormGrid>

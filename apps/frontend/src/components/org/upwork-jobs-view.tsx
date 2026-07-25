@@ -21,6 +21,7 @@ import { useDashboardSession } from '@/contexts/dashboard-session-context';
 import { showUserErrorToast, showUserSuccessToast } from '@/i18n/translate-user-message';
 import { getDefaultPageSize } from '@/lib/pagination';
 import { upworkRelevancyBadgeVariant } from '@/lib/upwork-relevancy-badge';
+import { formatUpworkScoreOutOfTen } from '@/lib/upwork-score-display';
 import { translateAuthRequestError } from '@/lib/user-messages';
 import {
   createScrapeRun,
@@ -408,7 +409,7 @@ export function UpworkJobsView() {
             <div className="flex flex-col items-start gap-1.5">
               <StatusBadge
                 variant={upworkRelevancyBadgeVariant(job.relevancyScore, scoringThresholds)}
-                label={t('table.score', { score: job.relevancyScore })}
+                label={t('table.score', { score: formatUpworkScoreOutOfTen(job.relevancyScore) })}
               />
               {job.isNewInRun ? <StatusBadge variant="emerald" label={t('table.new')} /> : null}
             </div>

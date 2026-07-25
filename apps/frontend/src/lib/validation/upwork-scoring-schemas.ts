@@ -1,16 +1,31 @@
 import { z } from 'zod';
 import { UPWORK_SCORING_WEIGHT_KEYS } from '@constellation/shared';
+import { formatUpworkScoreOutOfTen } from '@/lib/upwork-score-display';
 import { requiredText } from '@/lib/validation/form-fields';
 
-function parseIntField(value: string): number | null {
-  if (!/^\d+$/.test(value.trim())) return null;
-  return Number.parseInt(value.trim(), 10);
+/** Form values are on a 0–10 scale; API still uses 0–100. */
+const SCALE = 10;
+
+function parseScoreField(value: string): number | null {
+  const trimmed = value.trim();
+  if (!/^\d+(\.\d{1,2})?$/.test(trimmed)) return null;
+  const parsed = Number.parseFloat(trimmed);
+  if (!Number.isFinite(parsed)) return null;
+  return parsed;
+}
+
+function toApiScale(value: number): number {
+  return Math.round(value * SCALE);
+}
+
+function fromApiScale(value: number): string {
+  return formatUpworkScoreOutOfTen(value);
 }
 
 const weightOrThreshold = (requiredMessage: string, rangeMessage: string) =>
   requiredText(requiredMessage).refine((value) => {
-    const parsed = parseIntField(value);
-    return parsed != null && parsed >= 0 && parsed <= 100;
+    const parsed = parseScoreField(value);
+    return parsed != null && parsed >= 0 && parsed <= SCALE;
   }, rangeMessage);
 
 export type UpworkScoringFormValues = {
@@ -44,18 +59,18 @@ export function createUpworkScoringSchema(messages: {
       yellow: weightOrThreshold(messages.required, messages.range),
     })
     .superRefine((values, ctx) => {
-      const weights = UPWORK_SCORING_WEIGHT_KEYS.map((key) => parseIntField(values[key]) ?? 0);
-      const sum = weights.reduce((total, value) => total + value, 0);
-      if (sum !== 100) {
+      const weights = UPWORK_SCORING_WEIGHT_KEYS.map((key) => parseScoreField(values[key]) ?? 0);
+      const sumApi = weights.reduce((total, value) => total + toApiScale(value), 0);
+      if (sumApi !== 100) {
         ctx.addIssue({
           code: 'custom',
           message: messages.weightsSum,
           path: ['skills'],
         });
       }
-      const green = parseIntField(values.green) ?? 0;
-      const orange = parseIntField(values.orange) ?? 0;
-      const yellow = parseIntField(values.yellow) ?? 0;
+      const green = parseScoreField(values.green) ?? 0;
+      const orange = parseScoreField(values.orange) ?? 0;
+      const yellow = parseScoreField(values.yellow) ?? 0;
       if (!(green > orange && orange > yellow)) {
         ctx.addIssue({
           code: 'custom',
@@ -69,17 +84,17 @@ export function createUpworkScoringSchema(messages: {
 export function scoringFormToPayload(values: UpworkScoringFormValues) {
   return {
     weights: {
-      skills: parseIntField(values.skills) ?? 0,
-      keywords: parseIntField(values.keywords) ?? 0,
-      budget: parseIntField(values.budget) ?? 0,
-      location: parseIntField(values.location) ?? 0,
-      clientRating: parseIntField(values.clientRating) ?? 0,
-      proposals: parseIntField(values.proposals) ?? 0,
+      skills: toApiScale(parseScoreField(values.skills) ?? 0),
+      keywords: toApiScale(parseScoreField(values.keywords) ?? 0),
+      budget: toApiScale(parseScoreField(values.budget) ?? 0),
+      location: toApiScale(parseScoreField(values.location) ?? 0),
+      clientRating: toApiScale(parseScoreField(values.clientRating) ?? 0),
+      proposals: toApiScale(parseScoreField(values.proposals) ?? 0),
     },
     thresholds: {
-      green: parseIntField(values.green) ?? 0,
-      orange: parseIntField(values.orange) ?? 0,
-      yellow: parseIntField(values.yellow) ?? 0,
+      green: toApiScale(parseScoreField(values.green) ?? 0),
+      orange: toApiScale(parseScoreField(values.orange) ?? 0),
+      yellow: toApiScale(parseScoreField(values.yellow) ?? 0),
     },
   };
 }
@@ -96,14 +111,34 @@ export function scoringConfigToFormValues(config: {
   thresholds: { green: number; orange: number; yellow: number };
 }): UpworkScoringFormValues {
   return {
-    skills: String(config.weights.skills),
-    keywords: String(config.weights.keywords),
-    budget: String(config.weights.budget),
-    location: String(config.weights.location),
-    clientRating: String(config.weights.clientRating),
-    proposals: String(config.weights.proposals),
-    green: String(config.thresholds.green),
-    orange: String(config.thresholds.orange),
-    yellow: String(config.thresholds.yellow),
+    skills: fromApiScale(config.weights.skills),
+    keywords: fromApiScale(config.weights.keywords),
+    budget: fromApiScale(config.weights.budget),
+    location: fromApiScale(config.weights.location),
+    clientRating: fromApiScale(config.weights.clientRating),
+    proposals: fromApiScale(config.weights.proposals),
+    green: fromApiScale(config.thresholds.green),
+    orange: fromApiScale(config.thresholds.orange),
+    yellow: fromApiScale(config.thresholds.yellow),
+  };
+}
+
+export function scoringFormWeightSum(values: UpworkScoringFormValues): number {
+  const sumApi = UPWORK_SCORING_WEIGHT_KEYS.reduce(
+    (total, key) => total + toApiScale(parseScoreField(values[key]) ?? 0),
+    0,
+  );
+  return sumApi / SCALE;
+}
+
+export function scoringFormThresholdsApi(values: UpworkScoringFormValues): {
+  green: number;
+  orange: number;
+  yellow: number;
+} {
+  return {
+    green: toApiScale(parseScoreField(values.green) ?? 8),
+    orange: toApiScale(parseScoreField(values.orange) ?? 6),
+    yellow: toApiScale(parseScoreField(values.yellow) ?? 4),
   };
 }
