@@ -9,6 +9,7 @@ import { FreelancerProfileController } from './freelancer-profile.controller';
 import { FreelancerProfileService } from './freelancer-profile.service';
 import { OrgContextService } from './org-context.service';
 import { ProposalDraftsController } from './proposal-drafts.controller';
+import { ProposalDraftFromJobUrlController } from './proposal-draft-from-job-url.controller';
 import { ProposalExamplesController } from './proposal-examples.controller';
 import { ProposalAttachmentsController } from './proposal-attachments.controller';
 import { ProposalStylePackController } from './proposal-style-pack.controller';
@@ -34,6 +35,7 @@ import { UpworkScoringService } from './upwork-scoring.service';
     ProposalStylePackController,
     ProposalExamplesController,
     ProposalDraftsController,
+    ProposalDraftFromJobUrlController,
     ProposalAttachmentsController,
     ScrapeRunsController,
     UpworkJobsController,

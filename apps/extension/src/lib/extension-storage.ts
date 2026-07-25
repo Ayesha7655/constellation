@@ -5,6 +5,7 @@ type StoredValues = Partial<StoredSession>;
 
 const SESSION_KEYS: (keyof StoredSession)[] = ['accessToken', 'refreshToken', 'apiUrl', 'deviceId'];
 const THEME_KEY = 'theme';
+const DEFAULT_PROFILE_KEY = 'defaultFreelancerProfileId';
 
 export async function getStoredSession(): Promise<StoredSession | null> {
   const values = (await chrome.storage.local.get(SESSION_KEYS)) as StoredValues;
@@ -42,4 +43,17 @@ export async function getStoredTheme(): Promise<ExtensionTheme | null> {
 
 export async function saveTheme(theme: ExtensionTheme): Promise<void> {
   await chrome.storage.local.set({ [THEME_KEY]: theme });
+}
+
+export async function getStoredDefaultProfileId(): Promise<string | null> {
+  const value = (await chrome.storage.local.get(DEFAULT_PROFILE_KEY))[DEFAULT_PROFILE_KEY];
+  return typeof value === 'string' && value.trim() ? value : null;
+}
+
+export async function saveDefaultProfileId(profileId: string): Promise<void> {
+  await chrome.storage.local.set({ [DEFAULT_PROFILE_KEY]: profileId });
+}
+
+export async function clearDefaultProfileId(): Promise<void> {
+  await chrome.storage.local.remove([DEFAULT_PROFILE_KEY]);
 }

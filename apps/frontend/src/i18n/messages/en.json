@@ -4399,17 +4399,23 @@
     "ar": "Arabic"
   },
   "home": {
-    "apiBadge": "API {status}",
-    "apiConnected": "connected",
-    "apiOffline": "offline",
-    "title": "Constellation",
-    "description": "Organization platform with auth, RBAC, and org onboarding.",
-    "frontendLabel": "Frontend",
-    "frontendTitle": "Next.js 16",
-    "frontendDescription": "Next.js app with auth, dashboards, and org onboarding.",
-    "backendLabel": "Backend",
-    "backendTitle": "NestJS 11",
-    "backendDescription": "NestJS API with Firebase auth, JWT sessions, and Sequelize."
+    "eyebrow": "For Upwork freelancers & agencies",
+    "title": "Win better jobs with less busywork",
+    "description": "Constellation helps your team find relevant Upwork opportunities, stay on-voice, and turn strong matches into ready-to-send proposals — without starting from a blank page every time.",
+    "features": {
+      "match": {
+        "title": "Find the right work",
+        "description": "Sync your profiles, score new jobs against your skills, and focus on opportunities that actually fit."
+      },
+      "propose": {
+        "title": "Draft proposals faster",
+        "description": "Generate tailored proposals from a job page or your dashboard, then edit and copy into Upwork."
+      },
+      "voice": {
+        "title": "Sound like yourself",
+        "description": "Teach Constellation your winning examples so every draft follows your tone, structure, and style."
+      }
+    }
   },
   "matching": {
     "guidedSearch": {
@@ -5056,11 +5062,8 @@
         "apify_not_configured": "Apify is not configured. Set APIFY_TOKEN on the backend."
       },
       "upwork_job": {
-        "not_found": "That job was not found."
-      },
-      "upwork_scoring": {
-        "weights_invalid": "Scoring weights must be whole numbers that add up to 100.",
-        "thresholds_invalid": "Color thresholds must be 0–100 with green > orange > yellow."
+        "not_found": "That job was not found.",
+        "not_in_library": "This Upwork job is not in Constellation yet. Run a job search for your profile first."
       },
       "proposal": {
         "not_found": "That proposal draft was not found.",
@@ -5073,7 +5076,8 @@
         "attachment_too_large": "That attachment is too large (max 25 MB).",
         "attachment_limit": "You reached the attachment limit for this proposal.",
         "attachment_type": "That file type is not allowed for proposal attachments.",
-        "attachment_upload_failed": "Could not upload that attachment. Try again."
+        "attachment_upload_failed": "Could not upload that attachment. Try again.",
+        "invalid_job_url": "Open a valid Upwork job page, then try again."
       },
       "seller_trust_badge": {
         "not_eligible": "Your account is not eligible to apply for this badge.",
@@ -5749,10 +5753,14 @@
         "attachmentAdded": "Document attached.",
         "attachmentRemoved": "Document removed.",
         "jobPanelTitle": "Proposal draft",
-        "jobPanelHint": "Generate a draft in your voice, edit it, then copy into Upwork.",
+        "jobPanelHint": "Generate a draft in your voice, edit it, then copy into Upwork. Generate also saves the draft automatically.",
         "generate": "Generate proposal",
         "generating": "Generating…",
-        "generated": "Proposal draft generated.",
+        "generated": "Proposal generated and saved.",
+        "preview": "Preview",
+        "previewTitle": "Proposal preview",
+        "previewDescription": "Review the full draft before copying into Upwork.",
+        "previewEmpty": "No draft yet. Generate a proposal to preview it here.",
         "saveDraft": "Save draft",
         "draftSaved": "Proposal draft saved.",
         "addToLibrary": "Also add this draft to my examples",

@@ -54,7 +54,7 @@ export function FormField({
 }
 
 export const inputClassName = cn(
-  'w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground',
+  'w-full rounded-md border-0 bg-muted px-3 py-2 text-sm text-foreground',
   'outline-none ring-offset-background focus-visible:ring-2 focus-visible:ring-ring',
-  'aria-invalid:border-destructive/50 aria-invalid:ring-destructive/15',
+  'aria-invalid:ring-2 aria-invalid:ring-destructive/40',
 );

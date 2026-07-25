@@ -53,3 +53,8 @@ export enum ProposalDraftProvenance {
   AI = 'ai',
   MANUAL = 'manual',
 }
+
+export enum ProposalDraftSource {
+  WEB = 'web',
+  EXTENSION_JOB_PAGE = 'extension_job_page',
+}

@@ -259,6 +259,48 @@ export function isUpworkFreelancerProfileUrl(raw: string | null | undefined): bo
   return normalizeUpworkFreelancerProfileUrl(raw) !== null;
 }
 
+/** Prefer the canonical id embedded in an Upwork job URL (`~0…` digits). */
+export function parseUpworkJobExternalId(raw: string | null | undefined): string | null {
+  if (typeof raw !== 'string' || !raw.trim()) return null;
+  const fromUrl = raw.match(/~0*(\d+)/)?.[1] ?? raw.match(/\/jobs\/[^/_]+_~0*(\d+)/)?.[1];
+  return fromUrl ?? null;
+}
+
+/** Job listing (`/jobs/…`) or apply flow (`/nx/proposals/job/~0…/apply/`). */
+export function isUpworkJobPath(pathname: string): boolean {
+  if (pathname.includes('/jobs/')) return true;
+  if (/\/proposals\/job\/~0*\d+/i.test(pathname)) return true;
+  return false;
+}
+
+/** Strip query/hash so the same listing always shares one unique job URL. */
+export function normalizeUpworkJobUrl(url: string): string {
+  try {
+    const parsed = new URL(url);
+    parsed.search = '';
+    parsed.hash = '';
+    return parsed.toString();
+  } catch {
+    const withoutHash = url.split('#')[0] ?? url;
+    const withoutQuery = withoutHash.split('?')[0] ?? withoutHash;
+    return withoutQuery.trim();
+  }
+}
+
+/** Upwork host + a job listing or apply path with a resolvable external id. */
+export function isUpworkJobUrl(raw: string | null | undefined): boolean {
+  if (typeof raw !== 'string' || !raw.trim()) return false;
+  try {
+    const url = new URL(raw.trim());
+    const isUpworkHost = url.hostname === 'upwork.com' || url.hostname.endsWith('.upwork.com');
+    if (!isUpworkHost) return false;
+    if (!isUpworkJobPath(url.pathname)) return false;
+    return parseUpworkJobExternalId(url.toString()) !== null;
+  } catch {
+    return false;
+  }
+}
+
 /** Prefer `rawSnapshot.profile.uid` from the Chrome extension scraper. */
 export function extractUpworkUidFromRawSnapshot(raw: unknown): string | null {
   if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return null;

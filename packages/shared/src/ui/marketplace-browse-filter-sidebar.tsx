@@ -154,7 +154,7 @@ export function MarketplaceBrowseFilterSidebarContent({
             value={filters.priceMin}
             onChange={onPriceMinChange}
             placeholder={labels.priceMin}
-            className="h-9 rounded-md border border-border bg-background px-3 text-sm text-foreground placeholder:text-muted-foreground"
+            className="h-9 rounded-md border-0 bg-muted px-3 text-sm text-foreground placeholder:text-muted-foreground"
             data-testid={TEST_IDS.marketplace.browse.filterPriceMin}
             aria-label={labels.priceMin}
             aria-invalid={priceRangeInvalid}
@@ -167,7 +167,7 @@ export function MarketplaceBrowseFilterSidebarContent({
             value={filters.priceMax}
             onChange={onPriceMaxChange}
             placeholder={labels.priceMax}
-            className="h-9 rounded-md border border-border bg-background px-3 text-sm text-foreground placeholder:text-muted-foreground"
+            className="h-9 rounded-md border-0 bg-muted px-3 text-sm text-foreground placeholder:text-muted-foreground"
             data-testid={TEST_IDS.marketplace.browse.filterPriceMax}
             aria-label={labels.priceMax}
             aria-invalid={priceRangeInvalid}

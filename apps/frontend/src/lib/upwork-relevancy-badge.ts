@@ -15,7 +15,7 @@ export function upworkRelevancyBadgeVariant(
     case 'orange':
       return 'amber';
     case 'yellow':
-      return 'sky';
+      return 'violet';
     case 'red':
       return 'rejected';
   }

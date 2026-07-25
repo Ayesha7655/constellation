@@ -432,6 +432,7 @@ export type ProposalDraftDto = Readonly<{
   body: string;
   status: string;
   provenance: string;
+  source: string;
   modelMeta: Record<string, unknown> | null;
   attachments: ProposalAttachmentDto[];
   createdAt: string;

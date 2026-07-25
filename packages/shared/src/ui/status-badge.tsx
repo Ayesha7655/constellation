@@ -30,7 +30,7 @@ const variantClasses: Record<StatusBadgeVariant, string> = {
   seller:
     'border-emerald-600/35 bg-emerald-500/12 text-emerald-800 dark:border-emerald-400/35 dark:bg-emerald-500/15 dark:text-emerald-200',
   secondary:
-    'border-sky-500/35 bg-sky-500/12 text-sky-800 dark:border-sky-400/35 dark:bg-sky-500/15 dark:text-sky-200',
+    'border-primary/25 bg-primary/10 text-primary dark:border-violet-400/35 dark:bg-violet-500/15 dark:text-violet-200',
   admin:
     'border-orange-500/35 bg-orange-500/12 text-orange-800 dark:border-orange-400/35 dark:bg-orange-500/15 dark:text-orange-200',
   authGoogle:
@@ -43,7 +43,7 @@ const variantClasses: Record<StatusBadgeVariant, string> = {
     'border-emerald-600/35 bg-emerald-500/12 text-emerald-800 dark:border-emerald-400/35 dark:bg-emerald-500/15 dark:text-emerald-200',
   muted: 'border-border bg-muted text-muted-foreground',
   outline: 'border-border bg-background text-foreground',
-  sky: 'border-sky-500/35 bg-sky-500/12 text-sky-800 dark:border-sky-400/35 dark:bg-sky-500/15 dark:text-sky-200',
+  sky: 'border-primary/25 bg-accent text-primary dark:border-violet-400/35 dark:bg-violet-500/15 dark:text-violet-200',
   amber: 'border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-400',
   violet:
     'border-violet-500/35 bg-violet-500/12 text-violet-800 dark:border-violet-400/35 dark:bg-violet-500/15 dark:text-violet-200',

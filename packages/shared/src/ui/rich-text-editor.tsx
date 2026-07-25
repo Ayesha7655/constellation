@@ -171,7 +171,7 @@ export function RichTextEditor({
     <div className="flex flex-col gap-1">
       <div
         className={cn(
-          'overflow-hidden rounded-md border border-border bg-background focus-within:ring-2 focus-within:ring-ring',
+          'overflow-hidden rounded-md border-0 bg-background focus-within:ring-2 focus-within:ring-ring',
           disabled && 'opacity-60',
           showLimitError && 'border-destructive focus-within:ring-destructive/40',
         )}

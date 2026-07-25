@@ -956,6 +956,11 @@ export const TEST_IDS = {
     addToLibrary: 'upwork-proposals-add-to-library',
     saveDraft: 'upwork-proposals-save-draft',
     copy: 'upwork-proposals-copy',
+    preview: 'upwork-proposals-preview',
+    previewDialog: 'upwork-proposals-preview-dialog',
+    previewBody: 'upwork-proposals-preview-body',
+    previewCopy: 'upwork-proposals-preview-copy',
+    previewSave: 'upwork-proposals-preview-save',
   },
   upworkScoring: {
     refresh: 'upwork-scoring-refresh',

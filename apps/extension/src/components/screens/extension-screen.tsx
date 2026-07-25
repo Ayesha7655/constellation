@@ -1,4 +1,4 @@
-import { isUpworkProfileTab } from '../../lib/active-tab';
+import { isUpworkJobTab, isUpworkProfileTab } from '../../lib/active-tab';
 import type { ConnectionState, ExtensionAction, FreelancerProfileSummary } from '../../types';
 import { ConnectScreen } from './connect-screen';
 import { LoadingScreen } from './loading-screen';
@@ -8,9 +8,11 @@ type ExtensionScreenProps = Readonly<{
   connection: ConnectionState;
   activeTab: chrome.tabs.Tab | null;
   profiles: readonly FreelancerProfileSummary[];
+  defaultProfileId: string | null;
   action: ExtensionAction;
   onConnect: (code: string) => Promise<void>;
   onSync: () => Promise<void>;
+  onGenerateProposal: () => Promise<void>;
   onDisconnect: () => Promise<void>;
 }>;
 
@@ -18,9 +20,11 @@ export function ExtensionScreen({
   connection,
   activeTab,
   profiles,
+  defaultProfileId,
   action,
   onConnect,
   onSync,
+  onGenerateProposal,
   onDisconnect,
 }: ExtensionScreenProps) {
   switch (connection.status) {
@@ -33,10 +37,13 @@ export function ExtensionScreen({
         <SyncScreen
           action={action}
           isProfilePage={isUpworkProfileTab(activeTab)}
+          isJobPage={isUpworkJobTab(activeTab)}
           tabTitle={activeTab?.title ?? null}
           activeTabUrl={activeTab?.url ?? null}
           profiles={profiles}
+          defaultProfileId={defaultProfileId}
           onSync={onSync}
+          onGenerateProposal={onGenerateProposal}
           onDisconnect={onDisconnect}
         />
       );

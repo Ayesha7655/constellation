@@ -47,7 +47,7 @@ export type Feedback = Readonly<{
 
 export type ExtensionTheme = 'light' | 'dark';
 
-export type ExtensionAction = 'idle' | 'connecting' | 'syncing' | 'disconnecting';
+export type ExtensionAction = 'idle' | 'connecting' | 'syncing' | 'disconnecting' | 'generating';
 
 export type ConnectionState =
   | Readonly<{ status: 'loading' }>

@@ -148,7 +148,7 @@ export function UpworkFiltersView() {
           <select
             id="upwork-filters-profile"
             data-testid={TEST_IDS.upworkFilters.profileSelect}
-            className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            className="w-full rounded-lg border-0 bg-muted px-3 py-2 text-sm text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring"
             value={selectedId ?? ''}
             onChange={onSelectProfile}
             disabled={busy}
@@ -179,7 +179,7 @@ export function UpworkFiltersView() {
           <textarea
             id="upwork-filters-json"
             data-testid={TEST_IDS.upworkFilters.json}
-            className="min-h-72 w-full rounded-lg border border-border bg-background p-3 font-mono text-sm text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            className="min-h-72 w-full rounded-lg border-0 bg-muted p-3 font-mono text-sm text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring"
             value={jsonText}
             onChange={onJsonChange}
             disabled={!canUpdate || busy}

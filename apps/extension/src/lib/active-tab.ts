@@ -15,6 +15,37 @@ export function isUpworkProfileTab(tab: chrome.tabs.Tab | null): boolean {
   return normalizeUpworkFreelancerProfileUrl(tab.url) !== null;
 }
 
+/** Upwork host + `/jobs/…` or apply flow `/nx/proposals/job/~0…/apply/`. */
+export function isUpworkJobTab(tab: chrome.tabs.Tab | null): boolean {
+  if (!tab?.id || !tab.url) return false;
+  return isUpworkJobUrl(tab.url);
+}
+
+export function parseUpworkJobExternalId(raw: string | null | undefined): string | null {
+  if (typeof raw !== 'string' || !raw.trim()) return null;
+  return raw.match(/~0*(\d+)/)?.[1] ?? raw.match(/\/jobs\/[^/_]+_~0*(\d+)/)?.[1] ?? null;
+}
+
+/** Job listing (`/jobs/…`) or apply flow (`/nx/proposals/job/~0…/apply/`). */
+export function isUpworkJobPath(pathname: string): boolean {
+  if (pathname.includes('/jobs/')) return true;
+  if (/\/proposals\/job\/~0*\d+/i.test(pathname)) return true;
+  return false;
+}
+
+export function isUpworkJobUrl(raw: string | null | undefined): boolean {
+  if (typeof raw !== 'string' || !raw.trim()) return false;
+  try {
+    const url = new URL(raw.trim());
+    const isUpworkHost = url.hostname === 'upwork.com' || url.hostname.endsWith('.upwork.com');
+    if (!isUpworkHost) return false;
+    if (!isUpworkJobPath(url.pathname)) return false;
+    return parseUpworkJobExternalId(url.toString()) !== null;
+  } catch {
+    return false;
+  }
+}
+
 export function normalizeUpworkFreelancerProfileUrl(raw: string | null | undefined): string | null {
   if (typeof raw !== 'string' || !raw.trim()) return null;
   try {

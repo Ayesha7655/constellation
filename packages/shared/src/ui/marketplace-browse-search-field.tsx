@@ -53,7 +53,7 @@ export function MarketplaceBrowseSearchField({
         value={draft}
         onChange={onSearchChange}
         placeholder={labels.placeholder}
-        className="h-10 w-full rounded-md border border-border bg-background ps-10 pe-3 text-sm text-foreground placeholder:text-muted-foreground"
+        className="h-10 w-full rounded-md border-0 bg-muted ps-10 pe-3 text-sm text-foreground placeholder:text-muted-foreground"
         data-testid={TEST_IDS.marketplace.browse.search}
         aria-label={labels.placeholder}
       />

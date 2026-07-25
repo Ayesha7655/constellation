@@ -199,9 +199,9 @@ export function Dropdown<T extends string = string>({
         data-testid={testId}
         disabled={disabled || loading}
         className={cn(
-          'flex items-center justify-between gap-2 rounded-md border border-border',
-          'bg-background px-2.5 py-1.5 text-sm text-foreground shadow-sm transition-colors',
-          'hover:bg-muted/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+          'flex items-center justify-between gap-2 rounded-md border-0',
+          'bg-muted px-2.5 py-1.5 text-sm text-foreground transition-colors',
+          'hover:bg-muted/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
           (disabled || loading) && 'cursor-not-allowed opacity-70',
           isFullWidth ? 'w-full min-w-0' : 'inline-flex min-w-[7.5rem]',
           triggerClassName,

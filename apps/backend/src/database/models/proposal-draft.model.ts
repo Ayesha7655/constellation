@@ -10,7 +10,7 @@ import {
   Table,
   UpdatedAt,
 } from 'sequelize-typescript';
-import { ProposalDraftProvenance, ProposalDraftStatus } from '../enums';
+import { ProposalDraftProvenance, ProposalDraftSource, ProposalDraftStatus } from '../enums';
 import { FreelancerProfile } from './freelancer-profile.model';
 import { Organization } from './organization.model';
 import { ProposalAttachment } from './proposal-attachment.model';
@@ -50,6 +50,13 @@ export class ProposalDraft extends Model {
     defaultValue: ProposalDraftProvenance.AI,
   })
   declare provenance: ProposalDraftProvenance;
+
+  @Column({
+    type: DataType.TEXT,
+    allowNull: false,
+    defaultValue: ProposalDraftSource.WEB,
+  })
+  declare source: ProposalDraftSource;
 
   @Column({ type: DataType.JSONB, allowNull: true, field: 'model_meta' })
   declare modelMeta: Record<string, unknown> | null;

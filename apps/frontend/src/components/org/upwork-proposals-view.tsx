@@ -359,7 +359,7 @@ export function UpworkProposalsView() {
             <label className="flex flex-col gap-1 text-sm">
               <span className="text-muted-foreground">{t('selectProfile')}</span>
               <select
-                className="min-w-[16rem] rounded-md border border-border bg-background px-3 py-2 text-sm"
+                className="min-w-[16rem] rounded-md border-0 bg-muted px-3 py-2 text-sm"
                 value={selectedId ?? ''}
                 onChange={onSelectProfile}
                 data-testid={TEST_IDS.upworkProposals.profileSelect}
@@ -403,7 +403,7 @@ export function UpworkProposalsView() {
                 examples.map((example) => (
                   <li
                     key={example.id}
-                    className="rounded-md border border-border bg-background p-3"
+                    className="rounded-md border-0 bg-muted p-3"
                     data-testid={TEST_IDS.upworkProposals.exampleRow(example.id)}
                   >
                     <div className="mb-2 flex items-start justify-between gap-2">

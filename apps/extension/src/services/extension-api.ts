@@ -22,7 +22,7 @@ class ExtensionApiError extends Error {
   }
 }
 
-export type ExtensionOperation = 'connect' | 'sync' | 'disconnect';
+export type ExtensionOperation = 'connect' | 'sync' | 'disconnect' | 'generate';
 
 async function readError(response: Response): Promise<{ message: string; code?: string }> {
   const body = (await response.json().catch(() => null)) as { code?: unknown; message?: unknown } | null;
@@ -175,6 +175,33 @@ export async function listFreelancerProfiles(
   return { session: result.session, profiles };
 }
 
+export async function generateProposalFromJobUrl(
+  session: StoredSession,
+  profileId: string,
+  jobUrl: string,
+): Promise<{ session: StoredSession; body: string }> {
+  const result = await authenticatedFetch(
+    session,
+    `/organizations/me/freelancer-profiles/${profileId}/proposal-draft/generate-from-job-url`,
+    {
+      method: 'POST',
+      body: JSON.stringify({ jobUrl }),
+    },
+  );
+  if (!result.response.ok) {
+    const err = await readError(result.response);
+    throw new ExtensionApiError(err.message, result.response.status, err.code);
+  }
+
+  const body = (await result.response.json()) as { draft?: { body?: unknown } };
+  const proposalBody = typeof body.draft?.body === 'string' ? body.draft.body.trim() : '';
+  if (!proposalBody) {
+    throw new ExtensionApiError('api.proposal.generate_failed', 502, 'api.proposal.generate_failed');
+  }
+
+  return { session: result.session, body: proposalBody };
+}
+
 export async function importProfileDraft(
   session: StoredSession,
   profile: ScrapedProfile,
@@ -220,6 +247,24 @@ export function toFriendlyError(error: unknown, operation: ExtensionOperation): 
         error.message === 'api.freelancer_profile.import_invalid')
     ) {
       return 'Not a valid Upwork profile page.';
+    }
+    if (
+      operation === 'generate' &&
+      (error.code === 'api.upwork_job.not_in_library' || error.message === 'api.upwork_job.not_in_library')
+    ) {
+      return 'This job is not in Constellation yet. Run a job search for your profile first.';
+    }
+    if (
+      operation === 'generate' &&
+      (error.code === 'api.proposal.invalid_job_url' || error.message === 'api.proposal.invalid_job_url')
+    ) {
+      return 'Open a valid Upwork job page, then try again.';
+    }
+    if (
+      operation === 'generate' &&
+      (error.code === 'api.proposal.generate_failed' || error.message === 'api.proposal.generate_failed')
+    ) {
+      return 'Could not generate a proposal. Try again.';
     }
     return error.message;
   }

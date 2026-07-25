@@ -196,11 +196,11 @@ export function ProposalAttachmentsField({
           {attachments.map((attachment) => (
             <li
               key={attachment.id}
-              className="flex items-center justify-between gap-2 rounded-md border border-border bg-background px-3 py-2"
+              className="flex items-center justify-between gap-2 rounded-md border-0 bg-muted px-3 py-2"
               data-testid={`${testIdPrefix}-attachment-${attachment.id}`}
             >
               <div className="flex min-w-0 items-center gap-2">
-                <FileText className="size-4 shrink-0 text-sky-700" aria-hidden />
+                <FileText className="size-4 shrink-0 text-primary" aria-hidden />
                 <div className="min-w-0">
                   <p className="truncate text-sm text-foreground">{attachment.fileName}</p>
                   <p className="text-xs text-muted-foreground">{formatSize(attachment.sizeBytes)}</p>

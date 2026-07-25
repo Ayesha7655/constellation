@@ -61,7 +61,7 @@ function matchCardClass(band: 'green' | 'orange' | 'yellow' | 'red'): string {
     case 'orange':
       return 'bg-amber-500/10';
     case 'yellow':
-      return 'bg-sky-500/10';
+      return 'bg-yellow-500/10';
     case 'red':
       return 'bg-destructive/10';
   }
@@ -97,7 +97,7 @@ function MetaRow({
   return (
     <div className="flex gap-3">
       <div
-        className="flex size-8 shrink-0 items-center justify-center rounded-md border border-sky-500/25 bg-sky-500/10 text-sky-700 dark:text-sky-300"
+        className="flex size-8 shrink-0 items-center justify-center rounded-md border border-primary/25 bg-primary/10 text-primary"
         aria-hidden
       >
         {icon}

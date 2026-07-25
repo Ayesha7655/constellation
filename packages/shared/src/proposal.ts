@@ -10,6 +10,12 @@ export type ProposalStylePreferences = {
   extraNotes?: string | null;
 };
 
+/** Where a proposal draft was created. */
+export const PROPOSAL_DRAFT_SOURCES = ['web', 'extension_job_page'] as const;
+export type ProposalDraftSource = (typeof PROPOSAL_DRAFT_SOURCES)[number];
+export const PROPOSAL_DRAFT_SOURCE_WEB: ProposalDraftSource = 'web';
+export const PROPOSAL_DRAFT_SOURCE_EXTENSION_JOB_PAGE: ProposalDraftSource = 'extension_job_page';
+
 export type ProposalGenerationProfile = {
   title: string | null;
   overview: string | null;

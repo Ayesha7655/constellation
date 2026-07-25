@@ -4399,17 +4399,23 @@
     "ar": "العربية"
   },
   "home": {
-    "apiBadge": "واجهة برمجة التطبيقات {status}",
-    "apiConnected": "متصل",
-    "apiOffline": "غير متصل",
-    "title": "Constellation",
-    "description": "منصة مؤسسات مع المصادقة والصلاحيات وإعداد المؤسسة.",
-    "frontendLabel": "الواجهة الأمامية",
-    "frontendTitle": "Next.js 16",
-    "frontendDescription": "تطبيق Next.js مع المصادقة ولوحات التحكم وإعداد المؤسسة.",
-    "backendLabel": "الخادم",
-    "backendTitle": "NestJS 11",
-    "backendDescription": "واجهة NestJS مع مصادقة Firebase وجلسات JWT وSequelize."
+    "eyebrow": "للمستقلين والوكالات على Upwork",
+    "title": "اكسب وظائف أفضل بجهد أقل",
+    "description": "تساعد Constellation فريقك على إيجاد فرص Upwork المناسبة، والحفاظ على أسلوبكم، وتحويل المطابقات القوية إلى مقترحات جاهزة للإرسال — دون البدء من صفحة فارغة في كل مرة.",
+    "features": {
+      "match": {
+        "title": "اعثر على العمل المناسب",
+        "description": "زامن ملفاتك الشخصية، وقِيّم الوظائف الجديدة مقابل مهاراتك، وركّز على الفرص التي تناسبك فعلاً."
+      },
+      "propose": {
+        "title": "صغ المقترحات بسرعة",
+        "description": "أنشئ مقترحات مخصصة من صفحة الوظيفة أو لوحة التحكم، ثم عدّلها وانسخها إلى Upwork."
+      },
+      "voice": {
+        "title": "تحدّث بصوتك",
+        "description": "علّم Constellation أمثلتك الناجحة حتى يتبع كل مسودة نبرتك وهيكلتك وأسلوبك."
+      }
+    }
   },
   "matching": {
     "guidedSearch": {
@@ -5056,7 +5062,8 @@
         "apify_not_configured": "Apify غير مُعدّ. عيّن APIFY_TOKEN في الخادم."
       },
       "upwork_job": {
-        "not_found": "لم يتم العثور على هذه الوظيفة."
+        "not_found": "لم يتم العثور على هذه الوظيفة.",
+        "not_in_library": "هذه وظيفة Upwork ليست في Constellation بعد. شغّل بحث وظائف لملفك أولاً."
       },
       "upwork_scoring": {
         "weights_invalid": "يجب أن تكون أوزان التقييم أعداداً صحيحة ومجموعها 100.",
@@ -5065,6 +5072,7 @@
       "proposal": {
         "not_found": "لم يتم العثور على مسودة المقترح.",
         "generate_failed": "تعذّر إنشاء مقترح. حاول مرة أخرى.",
+        "invalid_job_url": "افتح صفحة وظيفة Upwork صالحة، ثم حاول مرة أخرى.",
         "example_not_found": "لم يتم العثور على مثال المقترح.",
         "examples_required": "أضف مثالين على الأقل من المقترحات قبل بناء حزمة الأسلوب.",
         "style_extract_failed": "تعذّر بناء حزمة أسلوب من أمثلتك. حاول مرة أخرى.",
@@ -5749,10 +5757,14 @@
         "attachmentAdded": "تم إرفاق المستند.",
         "attachmentRemoved": "تم إزالة المستند.",
         "jobPanelTitle": "مسودة المقترح",
-        "jobPanelHint": "أنشئ مسودة بأسلوبك، عدّلها، ثم انسخها إلى Upwork.",
+        "jobPanelHint": "أنشئ مسودة بأسلوبك، عدّلها، ثم انسخها إلى Upwork. الإنشاء يحفظ المسودة تلقائياً أيضاً.",
         "generate": "إنشاء مقترح",
         "generating": "جاري الإنشاء…",
-        "generated": "تم إنشاء مسودة المقترح.",
+        "generated": "تم إنشاء المقترح وحفظه.",
+        "preview": "معاينة",
+        "previewTitle": "معاينة المقترح",
+        "previewDescription": "راجع المسودة كاملة قبل نسخها إلى Upwork.",
+        "previewEmpty": "لا توجد مسودة بعد. أنشئ مقترحاً لمعاينته هنا.",
         "saveDraft": "حفظ المسودة",
         "draftSaved": "تم حفظ مسودة المقترح.",
         "addToLibrary": "أضف هذه المسودة أيضاً إلى أمثلتي",

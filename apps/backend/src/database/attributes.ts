@@ -226,6 +226,7 @@ export const PROPOSAL_DRAFT_ATTRS = [
   'body',
   'status',
   'provenance',
+  'source',
   'modelMeta',
   'createdAt',
   'updatedAt',

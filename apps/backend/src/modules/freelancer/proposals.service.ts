@@ -14,6 +14,9 @@ import {
   assertProposalAttachmentStorageKey,
   buildProposalAttachmentStorageKey,
   isProposalAttachmentStorageKey,
+  isUpworkJobUrl,
+  normalizeUpworkJobUrl,
+  parseUpworkJobExternalId,
 } from '@constellation/shared';
 import { ObjectStorageService } from '../../common/storage/object-storage.service';
 import { codedBadRequest, codedNotFound } from '../../common/exceptions/coded-http.exception';
@@ -28,6 +31,7 @@ import {
 } from '../../database/attributes';
 import {
   ProposalDraftProvenance,
+  ProposalDraftSource,
   ProposalDraftStatus,
   ProposalExampleSource,
 } from '../../database/enums';
@@ -40,6 +44,7 @@ import { UpworkJob } from '../../database/models/upwork-job.model';
 import { AiServiceClient } from './ai-service.client';
 import type { UploadProposalAttachmentDto } from './dto/proposal-attachment.dto';
 import type { CreateProposalExampleDto, UpdateProposalExampleDto } from './dto/proposal-example.dto';
+import type { GenerateProposalFromJobUrlDto } from './dto/generate-proposal-from-job-url.dto';
 import type { SaveProposalDraftDto } from './dto/save-proposal-draft.dto';
 import type { UpsertProposalStylePackDto } from './dto/upsert-proposal-style-pack.dto';
 import { OrgContextService } from './org-context.service';
@@ -329,7 +334,13 @@ export class ProposalsService {
     return { draft: this.toDraftView(draft, attachments) };
   }
 
-  async generateDraft(userId: string | undefined, profileId: string, jobId: string) {
+  async generateDraft(
+    userId: string | undefined,
+    profileId: string,
+    jobId: string,
+    options?: Readonly<{ source?: ProposalDraftSource }>,
+  ) {
+    const source = options?.source ?? ProposalDraftSource.WEB;
     const { orgId } = await this.orgContext.requireOrgIdForUser(userId);
     const profile = await this.requireOwnedProfile(orgId, profileId);
     const job = await this.requireOwnedJob(orgId, jobId);
@@ -376,6 +387,10 @@ export class ProposalsService {
 
     const trimmedBody = body.trim().slice(0, PROPOSAL_BODY_MAX_LENGTH);
     const modelMeta = { exampleIds: selectedIds };
+    const draftSource =
+      source === ProposalDraftSource.EXTENSION_JOB_PAGE
+        ? ProposalDraftSource.EXTENSION_JOB_PAGE
+        : ProposalDraftSource.WEB;
 
     const existing = await this.draftModel.findOne({
       where: { orgId, freelancerProfileId: profileId, upworkJobId: jobId },
@@ -386,8 +401,9 @@ export class ProposalsService {
     if (existing) {
       await existing.update({
         body: trimmedBody,
-        status: ProposalDraftStatus.DRAFT,
+        status: ProposalDraftStatus.SAVED,
         provenance: ProposalDraftProvenance.AI,
+        source: draftSource,
         modelMeta,
       });
       await existing.reload({ attributes: [...PROPOSAL_DRAFT_ATTRS] });
@@ -398,8 +414,9 @@ export class ProposalsService {
         freelancerProfileId: profileId,
         upworkJobId: jobId,
         body: trimmedBody,
-        status: ProposalDraftStatus.DRAFT,
+        status: ProposalDraftStatus.SAVED,
         provenance: ProposalDraftProvenance.AI,
+        source: draftSource,
         modelMeta,
       });
       await draft.reload({ attributes: [...PROPOSAL_DRAFT_ATTRS] });
@@ -407,6 +424,61 @@ export class ProposalsService {
 
     const attachments = await this.listAttachmentsForDraft(orgId, profileId, draft.id);
     return { draft: this.toDraftView(draft, attachments) };
+  }
+
+  async generateDraftFromJobUrl(
+    userId: string | undefined,
+    profileId: string,
+    dto: GenerateProposalFromJobUrlDto,
+  ) {
+    const jobUrl = dto.jobUrl.trim();
+    if (!isUpworkJobUrl(jobUrl)) {
+      throw codedBadRequest(API_ERROR_CODES.PROPOSAL_INVALID_JOB_URL);
+    }
+
+    const { orgId } = await this.orgContext.requireOrgIdForUser(userId);
+    await this.requireOwnedProfile(orgId, profileId);
+
+    const job = await this.findOrgJobByUpworkUrl(orgId, jobUrl);
+    if (!job) {
+      throw codedNotFound(API_ERROR_CODES.UPWORK_JOB_NOT_IN_LIBRARY);
+    }
+
+    return this.generateDraft(userId, profileId, job.id, {
+      source: ProposalDraftSource.EXTENSION_JOB_PAGE,
+    });
+  }
+
+  private async findOrgJobByUpworkUrl(orgId: string, jobUrl: string): Promise<UpworkJob | null> {
+    const normalizedUrl = normalizeUpworkJobUrl(jobUrl);
+    const externalJobId = parseUpworkJobExternalId(jobUrl);
+    const rows = await this.jobModel.findAll({
+      where: {
+        orgId,
+        [Op.or]: [
+          { jobUrl: normalizedUrl },
+          ...(externalJobId
+            ? [
+                { externalJobId },
+                { jobUrl: { [Op.like]: `%~0${externalJobId}/%` } },
+                { jobUrl: { [Op.like]: `%~0${externalJobId}?%` } },
+                { jobUrl: { [Op.like]: `%~0${externalJobId}` } },
+              ]
+            : []),
+        ],
+      },
+      attributes: [...UPWORK_JOB_ATTRS],
+      order: [['scrapedAt', 'DESC']],
+      limit: 20,
+    });
+
+    const byExactUrl = rows.find((row) => row.jobUrl === normalizedUrl);
+    if (byExactUrl) return byExactUrl;
+    if (externalJobId) {
+      const byExternal = rows.find((row) => row.externalJobId === externalJobId);
+      if (byExternal) return byExternal;
+    }
+    return rows[0] ?? null;
   }
 
   async saveDraft(userId: string | undefined, profileId: string, jobId: string, dto: SaveProposalDraftDto) {
@@ -437,6 +509,7 @@ export class ProposalsService {
         body,
         status: ProposalDraftStatus.SAVED,
         provenance: ProposalDraftProvenance.MANUAL,
+        source: ProposalDraftSource.WEB,
         modelMeta: null,
       });
       await draft.reload({ attributes: [...PROPOSAL_DRAFT_ATTRS] });
@@ -574,6 +647,7 @@ export class ProposalsService {
         body: '',
         status: ProposalDraftStatus.DRAFT,
         provenance: ProposalDraftProvenance.MANUAL,
+        source: ProposalDraftSource.WEB,
         modelMeta: null,
       });
       await draft.reload({ attributes: [...PROPOSAL_DRAFT_ATTRS] });
@@ -759,6 +833,7 @@ export class ProposalsService {
       body: row.body,
       status: row.status,
       provenance: row.provenance,
+      source: row.source,
       modelMeta: row.modelMeta,
       attachments,
       createdAt: row.createdAt.toISOString(),

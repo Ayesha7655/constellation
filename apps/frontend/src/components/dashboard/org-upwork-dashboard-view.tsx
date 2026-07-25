@@ -87,7 +87,7 @@ export function OrgUpworkDashboardView() {
       {fresh ? (
         <section className="rounded-xl bg-card p-6 shadow-sm">
           <div
-            className="mb-4 flex size-12 items-center justify-center rounded-md border border-sky-500/25 bg-sky-500/10 text-sky-700 dark:text-sky-300"
+            className="mb-4 flex size-12 items-center justify-center rounded-md border border-primary/25 bg-primary/10 text-primary"
             aria-hidden
           >
             <Radar className="size-6" />
@@ -158,7 +158,7 @@ export function OrgUpworkDashboardView() {
                     className="rounded-xl bg-card p-4 shadow-sm transition-colors hover:bg-muted/40"
                   >
                     <div
-                      className="mb-3 flex size-9 items-center justify-center rounded-md border border-sky-500/25 bg-sky-500/10 text-sky-700 dark:text-sky-300"
+                      className="mb-3 flex size-9 items-center justify-center rounded-md border border-primary/25 bg-primary/10 text-primary"
                       aria-hidden
                     >
                       <Briefcase className="size-4" />

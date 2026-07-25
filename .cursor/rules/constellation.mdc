@@ -92,9 +92,10 @@ quality and separation without importing Next.js-only infrastructure.
 - Match the app's semantic visual language: background/card/border/primary/muted/destructive tokens, compact
   cards, Lucide icons, visible focus rings, and light/dark support. Do not hardcode a disconnected visual system.
 - Keep `ThemeToggle` in the extension header. Initialize the saved `light | dark` preference before rendering,
-  persist it in `chrome.storage.local`, and fall back to the operating-system preference on first use.
+  persist it in `chrome.storage.local`, and default to **light** on first use (not the OS preference).
 - Apply extension theme state through `data-theme` on the root element and semantic CSS variables; do not use
   component-level hardcoded dark-mode colors or make the toggle depend on Next.js `next-themes`.
+- Frontend `ThemeProvider` defaults to **light** with `enableSystem={false}` — users can still toggle dark manually.
 - Every interactive element has a stable `data-testid`; do not derive IDs from display text or array indexes.
 - Keep the popup usable at its fixed width and avoid layouts that require horizontal scrolling.
 - The browser loads `apps/extension/dist`, not source files. `dist/` remains generated and ignored.
@@ -682,14 +683,14 @@ Detail summaries, side panels, and other read-heavy blocks should **not** be pla
 
 | Use case | Pattern |
 |----------|---------|
-| **Neutral metadata** (title, location, model, price, logistics, …) | **Sky** tile — light blue border/fill + blue icon (`border-sky-500/25 bg-sky-500/10 text-sky-700 dark:…`) |
+| **Neutral metadata** (title, location, model, price, logistics, …) | **Primary/purple** tile — light purple border/fill + primary icon (`border-primary/25 bg-primary/10 text-primary`) |
 | **Positive / in-stock / add** | **Emerald** tile or emerald value text |
 | **Warning / out-of-stock / caution** | **Amber** tile or **`StatusBadge`** `amber` |
 | **Remove / negative adjustment** | **Destructive** tint (red tile or `rejected` badge) |
 
 **Implementation:**
 
-- **Labeled detail fields:** reuse **`ListingDetailField`** (`components/listings/listing-detail-field.tsx`) — pass a Lucide icon; the component renders the sky tile + label/value row. Extend this helper (or extract a shared `DetailFieldIcon` class) when the same pattern appears on new surfaces — do not copy-paste tile classes per view.
+- **Labeled detail fields:** reuse **`ListingDetailField`** (`components/listings/listing-detail-field.tsx`) — pass a Lucide icon; the component renders the primary/purple tile + label/value row. Extend this helper (or extract a shared `DetailFieldIcon` class) when the same pattern appears on new surfaces — do not copy-paste tile classes per view.
 - **Key metrics / panel headers** (e.g. current quantity in inventory): optional larger tile (`size-10`, `size-5` icon) beside the headline value; tint the **surrounding card** when state matters (emerald in stock, amber out of stock).
 - **Scope:** detail pages, side panels, profile-style summaries, and admin record views — **not** dense data tables, form inputs, or every inline label. One icon per logical field is enough; do not decorate table headers or pagination for decoration alone.
 - **Accessibility:** tiles are decorative — `aria-hidden` on the tile wrapper; meaning stays in the visible label text.

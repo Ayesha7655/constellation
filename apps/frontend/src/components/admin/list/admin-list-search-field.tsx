@@ -54,7 +54,7 @@ export function AdminListSearchField({
         onChange={onSearchChange}
         placeholder={placeholder}
         maxLength={LIST_TEXT_SEARCH_MAX_LENGTH}
-        className="h-10 w-full rounded-md border border-border bg-background ps-10 pe-3 text-sm text-foreground placeholder:text-muted-foreground"
+        className="h-10 w-full rounded-md border-0 bg-muted ps-10 pe-3 text-sm text-foreground placeholder:text-muted-foreground"
         data-testid={testId}
         aria-label={ariaLabel}
         aria-invalid={atMaxLength}

@@ -585,7 +585,7 @@ export function DateTimePicker({
         aria-invalid={ariaInvalid}
         dir={dir}
         className={cn(
-          'flex w-full items-center gap-3 rounded-lg border border-border bg-background px-3 py-2.5 text-start transition-colors hover:border-primary/40 hover:bg-muted/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-70',
+          'flex w-full items-center gap-3 rounded-lg border-0 bg-muted px-3 py-2.5 text-start transition-colors hover:bg-muted/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-70',
           open && 'border-primary/50 ring-2 ring-ring/30',
           ariaInvalid && 'border-destructive/50',
         )}

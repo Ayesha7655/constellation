@@ -519,7 +519,7 @@ export function UpworkJobsView() {
           <select
             id="upwork-jobs-profile"
             data-testid={TEST_IDS.upworkJobs.profileSelect}
-            className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            className="w-full rounded-lg border-0 bg-muted px-3 py-2 text-sm text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring"
             value={selectedId ?? ''}
             onChange={onSelectProfile}
             disabled={busy}
@@ -540,7 +540,7 @@ export function UpworkJobsView() {
           <input
             id="upwork-jobs-search"
             data-testid={TEST_IDS.upworkJobs.search}
-            className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            className="w-full rounded-lg border-0 bg-muted px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
             value={q}
             onChange={onSearchChange}
             onKeyDown={onSearchKeyDown}
@@ -624,7 +624,7 @@ export function UpworkJobsView() {
               type="number"
               min={0}
               max={100}
-              className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              className="w-full rounded-lg border-0 bg-muted px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
               value={draftFilters.minScore}
               onChange={onDraftMinScoreChange}
             />
@@ -637,7 +637,7 @@ export function UpworkJobsView() {
             <select
               id="upwork-jobs-sort"
               data-testid={TEST_IDS.upworkJobs.sort}
-              className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              className="w-full rounded-lg border-0 bg-muted px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
               value={draftFilters.sort}
               onChange={onDraftSortChange}
             >
@@ -655,7 +655,7 @@ export function UpworkJobsView() {
                 id="upwork-jobs-from"
                 type="date"
                 data-testid={TEST_IDS.upworkJobs.scrapedFrom}
-                className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                className="w-full rounded-lg border-0 bg-muted px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 value={draftFilters.scrapedFrom}
                 onChange={onDraftFromChange}
               />
@@ -668,7 +668,7 @@ export function UpworkJobsView() {
                 id="upwork-jobs-to"
                 type="date"
                 data-testid={TEST_IDS.upworkJobs.scrapedTo}
-                className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                className="w-full rounded-lg border-0 bg-muted px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 value={draftFilters.scrapedTo}
                 onChange={onDraftToChange}
               />
