@@ -31,6 +31,7 @@ export function App() {
           action={controller.action}
           onConnect={controller.connect}
           onSync={controller.sync}
+          onSyncPortfolio={controller.syncPortfolio}
           onGenerateProposal={controller.generateProposal}
           onDisconnect={controller.disconnect}
         />

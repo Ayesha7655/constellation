@@ -3,7 +3,9 @@ import {
   assertValidScrapedProfile,
   getActiveTab,
   isUpworkJobTab,
+  isUpworkPortfolioProjectTab,
   isUpworkProfileTab,
+  scrapeActivePortfolioProject,
   scrapeActiveProfile,
 } from '../lib/active-tab';
 import {
@@ -15,6 +17,7 @@ import {
   connectWithCode,
   disconnect,
   generateProposalFromJobUrl,
+  importPortfolioProject,
   importProfileDraft,
   isAuthenticationError,
   listFreelancerProfiles,
@@ -154,6 +157,38 @@ export function useExtensionController() {
     }
   }, [activeTab, connection, refreshProfiles]);
 
+  const syncPortfolio = useCallback(async () => {
+    if (connection.status !== 'connected' || !activeTab) return;
+    if (!isUpworkPortfolioProjectTab(activeTab)) {
+      setFeedback({ tone: 'error', message: 'Open an Upwork portfolio project (?p=), then try again.' });
+      return;
+    }
+
+    setAction('syncing');
+    setFeedback({ tone: 'info', message: 'Reading the portfolio project…' });
+    try {
+      const project = await scrapeActivePortfolioProject(activeTab);
+      const result = await importPortfolioProject(connection.session, project);
+      setConnection({ status: 'connected', session: result.session });
+      setFeedback({
+        tone: 'success',
+        message: result.created
+          ? `Saved “${result.title}” to the matching profile.`
+          : `Updated “${result.title}” on the matching profile.`,
+      });
+    } catch (error) {
+      const message = toFriendlyError(error, 'syncPortfolio');
+      setFeedback({ tone: 'error', message });
+      if (isAuthenticationError(error)) {
+        setConnection({ status: 'disconnected' });
+        setProfiles([]);
+        setDefaultProfileId(null);
+      }
+    } finally {
+      setAction('idle');
+    }
+  }, [activeTab, connection]);
+
   const setDefaultProfile = useCallback(async (profileId: string) => {
     if (!profiles.some((profile) => profile.id === profileId)) return;
     await saveDefaultProfileId(profileId);
@@ -240,6 +275,7 @@ export function useExtensionController() {
     feedback,
     connect,
     sync,
+    syncPortfolio,
     generateProposal,
     setDefaultProfile,
     copyProposalPreview,

@@ -7,7 +7,7 @@
  * cannot leak into the main profile fields.
  */
 globalThis.CONSTELLATION_UPWORK_SELECTORS = {
-  version: '2026-07-15.profile-variants-v2',
+  version: '2026-07-29.portfolio-project-v2',
 
   profileReady: [
     '[data-qa-profile-viewer-uid]',
@@ -376,6 +376,111 @@ globalThis.CONSTELLATION_UPWORK_SELECTORS = {
         followers: [{ selector: '.followers' }],
         avatarUrl: [{ selector: '.avatar img[src]', attribute: 'src' }],
       },
+    },
+  },
+
+  /**
+   * Fullscreen portfolio project modal (`/freelancers/{slug}?p=`).
+   * Ordered fallbacks — first non-empty match wins (same idea as profile fields).
+   */
+  portfolioProject: {
+    root: [
+      '.air3-modal.air3-modal-portfolio-v2-viewer-modal.is-fullscreen',
+      '.air3-modal.air3-modal-portfolio-v2-viewer-modal',
+      '.air3-modal-portfolio-v2-viewer-modal',
+      '[class*="air3-modal-portfolio-v2-viewer-modal"]',
+    ],
+    leftColumn: [
+      '.portfolio-v2-viewer .sticky-left-column',
+      '.air3-modal-portfolio-v2-viewer-modal .sticky-left-column',
+      '.sticky-left-column',
+      '.portfolio-v2-viewer .span-lg-4 > .air3-grid-container',
+      '.portfolio-v2-viewer .span-12.span-lg-4',
+    ],
+    fields: {
+      title: [
+        { selector: '.air3-modal-header h2 .vertical-align-middle' },
+        { selector: '.air3-modal-header h2' },
+        { selector: '.portfolio-v2-viewer h2 .vertical-align-middle' },
+        { selector: '.portfolio-v2-viewer h2' },
+        { selector: '.air3-modal-portfolio-v2-viewer-modal h2' },
+        { selector: 'h2.m-0' },
+      ],
+      profileUrl: [
+        { selector: '.portfolio-v2-viewer a.up-n-link[href*="/freelancers/"]', attribute: 'href' },
+        { selector: 'a.up-n-link[href*="/freelancers/"]', attribute: 'href' },
+        { selector: '.air3-modal-portfolio-v2-viewer-modal a[href*="/freelancers/"]', attribute: 'href' },
+        { selector: 'a[href*="/freelancers/"][class*="up-n-link"]', attribute: 'href' },
+      ],
+    },
+    labeledFields: {
+      role: {
+        labelPatterns: [/^My role\.?$/i, /^Role\.?$/i],
+        blockSelectors: [
+          '.sticky-left-column .span-12.text-body:not(.text-pre-line)',
+          '.sticky-left-column .span-12.text-body',
+          '.sticky-left-column .span-12',
+          '.portfolio-v2-viewer .span-lg-4 .span-12.text-body',
+        ],
+        labelSelectors: ['span.text-light', '.text-light'],
+        maxLength: 200,
+      },
+      description: {
+        labelPatterns: [/^Project description\.?$/i, /^Description\.?$/i],
+        blockSelectors: [
+          '.sticky-left-column .span-12.text-body.text-pre-line',
+          '.sticky-left-column .span-12.text-pre-line',
+          '.sticky-left-column .span-12.text-body',
+          '.sticky-left-column .span-12',
+          '.portfolio-v2-viewer .span-lg-4 .span-12.text-pre-line',
+        ],
+        labelSelectors: ['span.text-light', '.text-light'],
+        preserveWhitespace: true,
+        maxLength: 20000,
+      },
+    },
+    lists: {
+      technologies: {
+        selectors: [
+          '.sticky-left-column .air3-token-wrap .air3-token',
+          '.sticky-left-column .air3-token',
+          '.portfolio-v2-viewer .air3-token-wrap .air3-token',
+          '.air3-modal-portfolio-v2-viewer-modal .air3-token-wrap .air3-token',
+          '.air3-modal-portfolio-v2-viewer-modal .air3-token',
+        ],
+        maxItems: 50,
+        maxItemLength: 80,
+      },
+    },
+    publishedOn: {
+      selectors: [
+        '.sticky-left-column small.text-light',
+        '.sticky-left-column small',
+        '.portfolio-v2-viewer .span-lg-4 small.text-light',
+        '.air3-modal-portfolio-v2-viewer-modal small.text-light',
+      ],
+      patterns: [/^Published on\s+(.+)$/i, /^Published:\s*(.+)$/i],
+    },
+    images: {
+      selectors: [
+        '.portfolio-v2-viewer-media-block img[src]',
+        '.portfolio-v2-viewer-media-block-image img[src]',
+        '.portfolio-v2-viewer img[src*="/att/download/portfolio/"]',
+        '.air3-modal-portfolio-v2-viewer-modal img[src*="/att/download/portfolio/"]',
+        '.air3-modal-portfolio-v2-viewer-modal img[src*="portfolio"]',
+      ],
+      attribute: 'src',
+      maxItems: 30,
+    },
+    externalLinks: {
+      scopeSelectors: [
+        '.sticky-left-column',
+        '.portfolio-v2-viewer .span-lg-4',
+        '.air3-modal-portfolio-v2-viewer-modal .span-lg-4',
+      ],
+      selectors: ['a[href^="https://"]', 'a[href^="http://"]'],
+      excludeHostSuffixes: ['upwork.com'],
+      maxItems: 20,
     },
   },
 };

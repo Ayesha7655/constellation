@@ -1,5 +1,5 @@
 import { useCallback } from 'react';
-import { Check, ExternalLink, PenLine, RefreshCw, Unplug, UserRound } from 'lucide-react';
+import { Briefcase, Check, ExternalLink, PenLine, RefreshCw, Unplug, UserRound } from 'lucide-react';
 import { normalizeUpworkFreelancerProfileUrl } from '../../lib/active-tab';
 import { getWebUrl } from '../../lib/extension-config';
 import type { ExtensionAction, FreelancerProfileSummary } from '../../types';
@@ -7,12 +7,14 @@ import type { ExtensionAction, FreelancerProfileSummary } from '../../types';
 type SyncScreenProps = Readonly<{
   action: ExtensionAction;
   isProfilePage: boolean;
+  isPortfolioPage: boolean;
   isJobPage: boolean;
   tabTitle: string | null;
   activeTabUrl: string | null;
   profiles: readonly FreelancerProfileSummary[];
   defaultProfileId: string | null;
   onSync: () => Promise<void>;
+  onSyncPortfolio: () => Promise<void>;
   onGenerateProposal: () => Promise<void>;
   onDisconnect: () => Promise<void>;
 }>;
@@ -32,12 +34,14 @@ function formatUpdatedAt(value: string): string {
 export function SyncScreen({
   action,
   isProfilePage,
+  isPortfolioPage,
   isJobPage,
   tabTitle,
   activeTabUrl,
   profiles,
   defaultProfileId,
   onSync,
+  onSyncPortfolio,
   onGenerateProposal,
   onDisconnect,
 }: SyncScreenProps) {
@@ -48,10 +52,15 @@ export function SyncScreen({
   const generating = action === 'generating';
   const isApplyPage = Boolean(activeTabUrl && /\/proposals\/job\/~0*\d+\/apply\/?/i.test(activeTabUrl));
   const canGenerate = isJobPage && Boolean(defaultProfileId);
+  const tabReady = isProfilePage || isJobPage || isPortfolioPage;
 
   const handleSync = useCallback(() => {
     void onSync();
   }, [onSync]);
+
+  const handleSyncPortfolio = useCallback(() => {
+    void onSyncPortfolio();
+  }, [onSyncPortfolio]);
 
   const handleGenerate = useCallback(() => {
     void onGenerateProposal();
@@ -60,6 +69,22 @@ export function SyncScreen({
   const handleDisconnect = useCallback(() => {
     void onDisconnect();
   }, [onDisconnect]);
+
+  const heading = isJobPage
+    ? 'Generate a proposal'
+    : isPortfolioPage
+      ? 'Resync a portfolio project'
+      : hasProfiles
+        ? 'Resync an Upwork profile'
+        : 'Sync an Upwork profile';
+
+  const intro = isJobPage
+    ? 'Use your default profile to draft a proposal for this job, copy it, and save it in Constellation.'
+    : isPortfolioPage
+      ? 'Scrape the open portfolio project and create or update it on the matching freelancer profile in Constellation.'
+      : hasProfiles
+        ? 'Scrape the profile in your active tab. Matched profiles update after you confirm in Constellation.'
+        : 'Import the profile open in your active tab as a draft for review in Constellation.';
 
   return (
     <main className="content">
@@ -81,20 +106,8 @@ export function SyncScreen({
       </div>
 
       <div className="intro intro-start">
-        <h1>
-          {isJobPage
-            ? 'Generate a proposal'
-            : hasProfiles
-              ? 'Resync an Upwork profile'
-              : 'Sync an Upwork profile'}
-        </h1>
-        <p>
-          {isJobPage
-            ? 'Use your default profile to draft a proposal for this job, copy it, and save it in Constellation.'
-            : hasProfiles
-              ? 'Scrape the profile in your active tab. Matched profiles update after you confirm in Constellation.'
-              : 'Import the profile open in your active tab as a draft for review in Constellation.'}
-        </p>
+        <h1>{heading}</h1>
+        <p>{intro}</p>
       </div>
 
       {hasProfiles ? (
@@ -134,9 +147,9 @@ export function SyncScreen({
         </section>
       ) : null}
 
-      <section className={`card tab-card ${isProfilePage || isJobPage ? 'tab-ready' : ''}`}>
+      <section className={`card tab-card ${tabReady ? 'tab-ready' : ''}`}>
         <div className="profile-icon" aria-hidden="true">
-          {isJobPage ? <PenLine size={19} /> : <UserRound size={19} />}
+          {isJobPage ? <PenLine size={19} /> : isPortfolioPage ? <Briefcase size={19} /> : <UserRound size={19} />}
         </div>
         <div className="tab-copy">
           <h2>
@@ -144,21 +157,25 @@ export function SyncScreen({
               ? isApplyPage
                 ? 'Apply page ready'
                 : 'Job ready'
-              : isProfilePage
-                ? 'Profile ready'
-                : 'Open an Upwork profile or job'}
+              : isPortfolioPage
+                ? 'Portfolio project ready'
+                : isProfilePage
+                  ? 'Profile ready'
+                  : 'Open an Upwork profile, portfolio, or job'}
           </h2>
           <p>
             {isJobPage
               ? isApplyPage
                 ? 'Generate a proposal for this application'
                 : tabTitle || 'Upwork job page'
-              : isProfilePage
-                ? tabTitle || 'Upwork freelancer profile'
-                : 'Navigate to a freelancer profile, job, or apply page'}
+              : isPortfolioPage
+                ? tabTitle || 'Upwork portfolio project'
+                : isProfilePage
+                  ? tabTitle || 'Upwork freelancer profile'
+                  : 'Navigate to a freelancer profile, portfolio project, job, or apply page'}
           </p>
         </div>
-        {isProfilePage || isJobPage ? <Check className="ready-check" size={18} aria-hidden="true" /> : null}
+        {tabReady ? <Check className="ready-check" size={18} aria-hidden="true" /> : null}
       </section>
 
       {isJobPage ? (
@@ -171,6 +188,17 @@ export function SyncScreen({
         >
           <PenLine className={generating ? 'spin' : ''} size={17} aria-hidden="true" />
           {generating ? 'Generating…' : 'Generate proposal'}
+        </button>
+      ) : isPortfolioPage ? (
+        <button
+          data-testid="extension-sync-portfolio"
+          className="button button-primary sync-button"
+          type="button"
+          onClick={handleSyncPortfolio}
+          disabled={busy}
+        >
+          <Briefcase className={syncing ? 'spin' : ''} size={17} aria-hidden="true" />
+          {syncing ? 'Resyncing portfolio…' : 'Resync portfolio project'}
         </button>
       ) : (
         <button
@@ -202,7 +230,7 @@ export function SyncScreen({
         <ExternalLink size={15} aria-hidden="true" />
       </a>
 
-      {!isProfilePage && !isJobPage ? (
+      {!tabReady ? (
         <a
           className="app-link"
           data-testid="extension-open-upwork"

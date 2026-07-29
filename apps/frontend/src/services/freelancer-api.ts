@@ -38,6 +38,28 @@ export type FreelancerProfilesListResponse = Readonly<{
   pendingDraft: ProfileImportDraftDto | null;
 }>;
 
+export type PortfolioProjectLinkDto = Readonly<{
+  label?: string;
+  url: string;
+}>;
+
+export type PortfolioProjectDto = Readonly<{
+  id: string;
+  freelancerProfileId: string;
+  externalId: string;
+  title: string;
+  role: string | null;
+  description: string | null;
+  technologies: string[];
+  links: PortfolioProjectLinkDto[];
+  imageUrls: string[];
+  publishedOn: string | null;
+  source: string;
+  scrapedAt: string;
+  createdAt: string;
+  updatedAt: string;
+}>;
+
 export type SearchFiltersResponse = Readonly<{
   id?: string;
   orgId?: string;
@@ -141,6 +163,31 @@ export function updateFreelancerProfile(
 
 export function deleteFreelancerProfile(profileId: string): Promise<{ ok: true }> {
   return orgRequest(`${profilesBase}/${profileId}`, { method: 'DELETE' });
+}
+
+export function listPortfolioProjects(
+  profileId: string,
+): Promise<{ projects: PortfolioProjectDto[] }> {
+  return orgRequest(`${profilesBase}/${profileId}/portfolio-projects`);
+}
+
+export function getPortfolioProject(
+  profileId: string,
+  projectId: string,
+  options?: { trackGlobalLoading?: boolean },
+): Promise<{ project: PortfolioProjectDto }> {
+  return orgRequest(`${profilesBase}/${profileId}/portfolio-projects/${projectId}`, {
+    trackGlobalLoading: options?.trackGlobalLoading,
+  });
+}
+
+export function deletePortfolioProject(
+  profileId: string,
+  projectId: string,
+): Promise<{ ok: true }> {
+  return orgRequest(`${profilesBase}/${profileId}/portfolio-projects/${projectId}`, {
+    method: 'DELETE',
+  });
 }
 
 export function confirmFreelancerProfileImport(

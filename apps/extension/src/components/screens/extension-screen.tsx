@@ -1,4 +1,4 @@
-import { isUpworkJobTab, isUpworkProfileTab } from '../../lib/active-tab';
+import { isUpworkJobTab, isUpworkPortfolioProjectTab, isUpworkProfileTab } from '../../lib/active-tab';
 import type { ConnectionState, ExtensionAction, FreelancerProfileSummary } from '../../types';
 import { ConnectScreen } from './connect-screen';
 import { LoadingScreen } from './loading-screen';
@@ -12,6 +12,7 @@ type ExtensionScreenProps = Readonly<{
   action: ExtensionAction;
   onConnect: (code: string) => Promise<void>;
   onSync: () => Promise<void>;
+  onSyncPortfolio: () => Promise<void>;
   onGenerateProposal: () => Promise<void>;
   onDisconnect: () => Promise<void>;
 }>;
@@ -24,6 +25,7 @@ export function ExtensionScreen({
   action,
   onConnect,
   onSync,
+  onSyncPortfolio,
   onGenerateProposal,
   onDisconnect,
 }: ExtensionScreenProps) {
@@ -37,12 +39,14 @@ export function ExtensionScreen({
         <SyncScreen
           action={action}
           isProfilePage={isUpworkProfileTab(activeTab)}
+          isPortfolioPage={isUpworkPortfolioProjectTab(activeTab)}
           isJobPage={isUpworkJobTab(activeTab)}
           tabTitle={activeTab?.title ?? null}
           activeTabUrl={activeTab?.url ?? null}
           profiles={profiles}
           defaultProfileId={defaultProfileId}
           onSync={onSync}
+          onSyncPortfolio={onSyncPortfolio}
           onGenerateProposal={onGenerateProposal}
           onDisconnect={onDisconnect}
         />

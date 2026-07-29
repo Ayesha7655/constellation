@@ -259,6 +259,45 @@ export function isUpworkFreelancerProfileUrl(raw: string | null | undefined): bo
   return normalizeUpworkFreelancerProfileUrl(raw) !== null;
 }
 
+/** Upwork portfolio project id from `?p=` on a freelancer profile URL. */
+export function parseUpworkPortfolioProjectId(raw: string | null | undefined): string | null {
+  if (typeof raw !== 'string' || !raw.trim()) return null;
+  try {
+    const url = new URL(raw.trim());
+    const value = url.searchParams.get('p')?.trim();
+    if (!value || !/^\d+$/.test(value)) return null;
+    return value;
+  } catch {
+    return null;
+  }
+}
+
+/** Freelancer profile URL with a portfolio project query (`?p=`). */
+export function isUpworkPortfolioProjectUrl(raw: string | null | undefined): boolean {
+  return (
+    normalizeUpworkFreelancerProfileUrl(raw) !== null && parseUpworkPortfolioProjectId(raw) !== null
+  );
+}
+
+export type UpworkPortfolioProjectLink = Readonly<{
+  label?: string;
+  url: string;
+}>;
+
+/** Scraped Upwork portfolio project (extension → API import). */
+export type ScrapedUpworkPortfolioProject = Readonly<{
+  externalId: string;
+  profileUrl: string;
+  title: string;
+  role: string | null;
+  description: string | null;
+  technologies: readonly string[];
+  links: readonly UpworkPortfolioProjectLink[];
+  imageUrls: readonly string[];
+  publishedOn: string | null;
+  rawSnapshot?: Record<string, unknown>;
+}>;
+
 /** Prefer the canonical id embedded in an Upwork job URL (`~0…` digits). */
 export function parseUpworkJobExternalId(raw: string | null | undefined): string | null {
   if (typeof raw !== 'string' || !raw.trim()) return null;

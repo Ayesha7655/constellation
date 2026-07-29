@@ -2,6 +2,23 @@ import type { ScrapedProfile } from '../types';
 
 type ScrapeResponse = Readonly<{ ok: true; profile: ScrapedProfile }> | Readonly<{ ok: false; error?: string }>;
 
+type ScrapePortfolioResponse =
+  | Readonly<{ ok: true; project: ScrapedPortfolioProject }>
+  | Readonly<{ ok: false; error?: string }>;
+
+export type ScrapedPortfolioProject = Readonly<{
+  externalId: string;
+  profileUrl: string;
+  title: string;
+  role: string | null;
+  description: string | null;
+  technologies: string[];
+  links: ReadonlyArray<{ label?: string; url: string }>;
+  imageUrls: string[];
+  publishedOn: string | null;
+  rawSnapshot?: Record<string, unknown>;
+}>;
+
 const INVALID_PROFILE_PAGE = 'Not a valid Upwork profile page.';
 
 export async function getActiveTab(): Promise<chrome.tabs.Tab | null> {
@@ -13,6 +30,12 @@ export async function getActiveTab(): Promise<chrome.tabs.Tab | null> {
 export function isUpworkProfileTab(tab: chrome.tabs.Tab | null): boolean {
   if (!tab?.id || !tab.url) return false;
   return normalizeUpworkFreelancerProfileUrl(tab.url) !== null;
+}
+
+/** Freelancer URL with portfolio project query `?p=`. */
+export function isUpworkPortfolioProjectTab(tab: chrome.tabs.Tab | null): boolean {
+  if (!tab?.id || !tab.url) return false;
+  return isUpworkPortfolioProjectUrl(tab.url);
 }
 
 /** Upwork host + `/jobs/…` or apply flow `/nx/proposals/job/~0…/apply/`. */
@@ -62,6 +85,24 @@ export function normalizeUpworkFreelancerProfileUrl(raw: string | null | undefin
   }
 }
 
+export function parseUpworkPortfolioProjectId(raw: string | null | undefined): string | null {
+  if (typeof raw !== 'string' || !raw.trim()) return null;
+  try {
+    const url = new URL(raw.trim());
+    const value = url.searchParams.get('p')?.trim();
+    if (!value || !/^\d+$/.test(value)) return null;
+    return value;
+  } catch {
+    return null;
+  }
+}
+
+export function isUpworkPortfolioProjectUrl(raw: string | null | undefined): boolean {
+  return (
+    normalizeUpworkFreelancerProfileUrl(raw) !== null && parseUpworkPortfolioProjectId(raw) !== null
+  );
+}
+
 /** Client-side guard before calling import — backend remains source of truth. */
 export function assertValidScrapedProfile(profile: ScrapedProfile): void {
   const profileUrl = normalizeUpworkFreelancerProfileUrl(profile.profileUrl);
@@ -93,5 +134,29 @@ export async function scrapeActiveProfile(tab: chrome.tabs.Tab): Promise<Scraped
       }
       resolve(response.profile);
     });
+  });
+}
+
+export async function scrapeActivePortfolioProject(tab: chrome.tabs.Tab): Promise<ScrapedPortfolioProject> {
+  const tabId = tab.id;
+  if (!tabId) throw new Error('Open an Upwork portfolio project first.');
+
+  return new Promise((resolve, reject) => {
+    chrome.tabs.sendMessage(
+      tabId,
+      { type: 'SCRAPE_UPWORK_PORTFOLIO_PROJECT' },
+      (response: ScrapePortfolioResponse | undefined) => {
+        const runtimeError = chrome.runtime.lastError;
+        if (runtimeError) {
+          reject(new Error('Refresh the Upwork page, then try again.'));
+          return;
+        }
+        if (!response?.ok) {
+          reject(new Error(response?.error || 'Could not read this portfolio project.'));
+          return;
+        }
+        resolve(response.project);
+      },
+    );
   });
 }

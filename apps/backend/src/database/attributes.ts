@@ -247,5 +247,22 @@ export const PROPOSAL_ATTACHMENT_ATTRS = [
   'updatedAt',
 ] as const;
 
+export const PORTFOLIO_PROJECT_ATTRS = [
+  'id',
+  'freelancerProfileId',
+  'externalId',
+  'title',
+  'role',
+  'description',
+  'technologies',
+  'links',
+  'imageUrls',
+  'publishedOn',
+  'source',
+  'scrapedAt',
+  'createdAt',
+  'updatedAt',
+] as const;
+
 export const ORG_EXTENSION_ATTRS = ['id', 'extensionConnectedAt'] as const;
 export const ORG_SCORING_ATTRS = ['id', 'upworkScoringConfig'] as const;

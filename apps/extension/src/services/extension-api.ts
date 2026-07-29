@@ -1,3 +1,4 @@
+import type { ScrapedPortfolioProject } from '../lib/active-tab';
 import { getDefaultApiUrl } from '../lib/extension-config';
 import { clearSession, ensureDeviceId, getStoredSession, saveSession } from '../lib/extension-storage';
 import type {
@@ -22,7 +23,7 @@ class ExtensionApiError extends Error {
   }
 }
 
-export type ExtensionOperation = 'connect' | 'sync' | 'disconnect' | 'generate';
+export type ExtensionOperation = 'connect' | 'sync' | 'disconnect' | 'generate' | 'syncPortfolio';
 
 async function readError(response: Response): Promise<{ message: string; code?: string }> {
   const body = (await response.json().catch(() => null)) as { code?: unknown; message?: unknown } | null;
@@ -228,6 +229,31 @@ export async function importProfileDraft(
   };
 }
 
+export async function importPortfolioProject(
+  session: StoredSession,
+  project: ScrapedPortfolioProject,
+): Promise<{ session: StoredSession; created: boolean; title: string }> {
+  const result = await authenticatedFetch(session, '/organizations/me/portfolio-projects/import', {
+    method: 'POST',
+    body: JSON.stringify(project),
+  });
+  if (!result.response.ok) {
+    const err = await readError(result.response);
+    throw new ExtensionApiError(err.message, result.response.status, err.code);
+  }
+
+  const body = (await result.response.json()) as {
+    created?: unknown;
+    project?: { title?: unknown };
+  };
+
+  return {
+    session: result.session,
+    created: body.created === true,
+    title: typeof body.project?.title === 'string' ? body.project.title : project.title,
+  };
+}
+
 export function isAuthenticationError(error: unknown): boolean {
   return error instanceof ExtensionApiError && error.status === 401;
 }
@@ -247,6 +273,20 @@ export function toFriendlyError(error: unknown, operation: ExtensionOperation): 
         error.message === 'api.freelancer_profile.import_invalid')
     ) {
       return 'Not a valid Upwork profile page.';
+    }
+    if (
+      operation === 'syncPortfolio' &&
+      (error.code === 'api.portfolio_project.profile_required' ||
+        error.message === 'api.portfolio_project.profile_required')
+    ) {
+      return 'Import this freelancer profile into Constellation first, then sync the portfolio project.';
+    }
+    if (
+      operation === 'syncPortfolio' &&
+      (error.code === 'api.portfolio_project.import_invalid' ||
+        error.message === 'api.portfolio_project.import_invalid')
+    ) {
+      return 'Could not read this portfolio project. Open the project modal and try again.';
     }
     if (
       operation === 'generate' &&

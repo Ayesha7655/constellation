@@ -5046,6 +5046,11 @@
         "org_required": "You need an organization to sync an Upwork profile.",
         "import_invalid": "Not a valid Upwork profile page. Open a freelancer profile and try again."
       },
+      "portfolio_project": {
+        "import_invalid": "Could not import that portfolio project. Open the project on Upwork and try again.",
+        "profile_required": "Import this freelancer profile into Constellation first, then sync the portfolio project.",
+        "not_found": "That portfolio project was not found."
+      },
       "search_filters": {
         "not_found": "No search filters saved yet.",
         "generate_failed": "Could not generate search filters. Try again.",
@@ -5692,6 +5697,24 @@
         "unnamedProfile": "Untitled profile",
         "noProfiles": "No profiles yet",
         "emptyState": "Add a blank profile or confirm an extension import to get started.",
+        "portfolio": {
+          "title": "Portfolio",
+          "empty": "No portfolio projects yet. Open a project on Upwork (?p=) and sync it with the Chrome extension.",
+          "role": "Role",
+          "publishedOn": "Published {value}",
+          "loadError": "Could not load portfolio projects.",
+          "viewDetails": "View details",
+          "untitled": "Untitled project",
+          "description": "Description",
+          "technologies": "Technologies",
+          "links": "Links",
+          "images": "Images",
+          "delete": "Delete project",
+          "deleteTitle": "Delete portfolio project?",
+          "deleteDescription": "Remove “{title}” from this profile? You can sync it again from Upwork later.",
+          "deleteConfirm": "Delete",
+          "deleted": "Portfolio project deleted."
+        },
         "fields": {
           "label": "Label",
           "title": "Title",

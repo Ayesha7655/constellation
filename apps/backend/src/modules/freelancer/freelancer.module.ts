@@ -26,6 +26,8 @@ import { UpworkOverviewController } from './upwork-overview.controller';
 import { UpworkOverviewService } from './upwork-overview.service';
 import { UpworkScoringController } from './upwork-scoring.controller';
 import { UpworkScoringService } from './upwork-scoring.service';
+import { PortfolioProjectsController } from './portfolio-projects.controller';
+import { PortfolioProjectsService } from './portfolio-projects.service';
 
 @Module({
   imports: [DatabaseModule, AuthModule],
@@ -37,6 +39,7 @@ import { UpworkScoringService } from './upwork-scoring.service';
     ProposalDraftsController,
     ProposalDraftFromJobUrlController,
     ProposalAttachmentsController,
+    PortfolioProjectsController,
     ScrapeRunsController,
     UpworkJobsController,
     UpworkOverviewController,
@@ -51,6 +54,7 @@ import { UpworkScoringService } from './upwork-scoring.service';
     ProposalsService,
     ProposalAttachmentUploadRegistry,
     ObjectStorageService,
+    PortfolioProjectsService,
     ScrapeRunsService,
     UpworkJobsService,
     UpworkOverviewService,

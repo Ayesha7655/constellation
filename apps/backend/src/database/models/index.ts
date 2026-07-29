@@ -17,3 +17,4 @@ export { ProposalStylePack } from './proposal-style-pack.model';
 export { ProposalExample } from './proposal-example.model';
 export { ProposalDraft } from './proposal-draft.model';
 export { ProposalAttachment } from './proposal-attachment.model';
+export { PortfolioProject } from './portfolio-project.model';

@@ -22,6 +22,7 @@ import {
   ProposalExample,
   ProposalDraft,
   ProposalAttachment,
+  PortfolioProject,
 } from './models';
 
 const models = [
@@ -44,6 +45,7 @@ const models = [
   ProposalExample,
   ProposalDraft,
   ProposalAttachment,
+  PortfolioProject,
 ];
 
 @Global()

@@ -397,7 +397,299 @@
     };
   };
 
+  const firstMatch = (root, selectors) => {
+    for (const selector of selectors ?? []) {
+      try {
+        const el = root.querySelector(selector);
+        if (el) return el;
+      } catch {
+        /* invalid selector */
+      }
+    }
+    return null;
+  };
+
+  const textContent = (el, preserveWhitespace = false) => {
+    if (!el) return '';
+    return cleanText(el.textContent, preserveWhitespace, 20000);
+  };
+
+  const readLabeledField = (root, fieldConfig, diagnostics, diagnosticKey) => {
+    if (!fieldConfig) return null;
+    const labelPatterns = fieldConfig.labelPatterns ?? [];
+    const blockSelectors = fieldConfig.blockSelectors ?? ['.span-12'];
+    const labelSelectors = fieldConfig.labelSelectors ?? ['span.text-light'];
+
+    for (const blockSelector of blockSelectors) {
+      let blocks;
+      try {
+        blocks = root.querySelectorAll(blockSelector);
+      } catch (error) {
+        diagnostics.invalidSelectors.push({
+          field: diagnosticKey,
+          selector: blockSelector,
+          message: error instanceof Error ? error.message : String(error),
+        });
+        continue;
+      }
+
+      for (const block of blocks) {
+        let labelEl = null;
+        for (const labelSelector of labelSelectors) {
+          try {
+            labelEl = block.querySelector(labelSelector);
+          } catch {
+            continue;
+          }
+          if (labelEl) break;
+        }
+        const label = textContent(labelEl);
+        if (!label || !labelPatterns.some((pattern) => pattern.test(label))) continue;
+
+        const clone = block.cloneNode(true);
+        for (const labelSelector of labelSelectors) {
+          try {
+            clone.querySelectorAll(labelSelector).forEach((node) => node.remove());
+          } catch {
+            /* ignore */
+          }
+        }
+        const value = cleanText(
+          clone.textContent,
+          Boolean(fieldConfig.preserveWhitespace),
+          fieldConfig.maxLength ?? 5000,
+        );
+        if (!value) continue;
+        diagnostics.matches[diagnosticKey] = blockSelector;
+        return value;
+      }
+    }
+
+    diagnostics.missing.push(diagnosticKey);
+    return null;
+  };
+
+  const readPublishedOn = (root, publishedConfig, diagnostics) => {
+    if (!publishedConfig) return null;
+    const patterns = publishedConfig.patterns ?? [/^Published on\s+(.+)$/i];
+    for (const selector of publishedConfig.selectors ?? []) {
+      try {
+        const nodes = root.querySelectorAll(selector);
+        for (const el of nodes) {
+          const text = textContent(el);
+          for (const pattern of patterns) {
+            const match = text.match(pattern);
+            if (match?.[1]) {
+              diagnostics.matches.publishedOn = selector;
+              return match[1].trim();
+            }
+          }
+        }
+      } catch (error) {
+        diagnostics.invalidSelectors.push({
+          field: 'publishedOn',
+          selector,
+          message: error instanceof Error ? error.message : String(error),
+        });
+      }
+    }
+    diagnostics.missing.push('publishedOn');
+    return null;
+  };
+
+  const readImageUrls = (root, imagesConfig, diagnostics) => {
+    if (!imagesConfig) return [];
+    const attribute = imagesConfig.attribute ?? 'src';
+    const maxItems = imagesConfig.maxItems ?? 30;
+    const seen = new Set();
+    const urls = [];
+
+    for (const selector of imagesConfig.selectors ?? []) {
+      try {
+        root.querySelectorAll(selector).forEach((el) => {
+          const raw = el.getAttribute(attribute);
+          if (!raw) return;
+          const abs = absoluteUrl(raw);
+          if (!abs || seen.has(abs) || urls.length >= maxItems) return;
+          seen.add(abs);
+          urls.push(abs);
+        });
+        if (urls.length > 0) {
+          diagnostics.matches.images = selector;
+          diagnostics.counts.images = urls.length;
+          return urls;
+        }
+      } catch (error) {
+        diagnostics.invalidSelectors.push({
+          field: 'images',
+          selector,
+          message: error instanceof Error ? error.message : String(error),
+        });
+      }
+    }
+
+    diagnostics.missing.push('images');
+    diagnostics.counts.images = 0;
+    return [];
+  };
+
+  const readExternalLinks = (root, linksConfig, diagnostics) => {
+    if (!linksConfig) return [];
+    const maxItems = linksConfig.maxItems ?? 20;
+    const excludeHostSuffixes = linksConfig.excludeHostSuffixes ?? ['upwork.com'];
+    const scope =
+      firstMatch(root, linksConfig.scopeSelectors) ??
+      root;
+    const seen = new Set();
+    const links = [];
+
+    for (const selector of linksConfig.selectors ?? []) {
+      try {
+        scope.querySelectorAll(selector).forEach((anchor) => {
+          const href = (anchor.getAttribute('href') || '').trim();
+          if (!href || seen.has(href) || links.length >= maxItems) return;
+          try {
+            const url = new URL(href, window.location.href);
+            if (
+              excludeHostSuffixes.some(
+                (suffix) => url.hostname === suffix || url.hostname.endsWith(`.${suffix}`),
+              )
+            ) {
+              return;
+            }
+            seen.add(href);
+            const label = textContent(anchor) || undefined;
+            links.push(label ? { label, url: url.toString() } : { url: url.toString() });
+          } catch {
+            /* ignore bad urls */
+          }
+        });
+        if (links.length > 0) {
+          diagnostics.matches.externalLinks = selector;
+          diagnostics.counts.externalLinks = links.length;
+          return links;
+        }
+      } catch (error) {
+        diagnostics.invalidSelectors.push({
+          field: 'externalLinks',
+          selector,
+          message: error instanceof Error ? error.message : String(error),
+        });
+      }
+    }
+
+    diagnostics.counts.externalLinks = 0;
+    return [];
+  };
+
+  const scrapePortfolioProject = async () => {
+    const projectConfig = config.portfolioProject;
+    if (!projectConfig) {
+      throw new Error('Portfolio project scraper is not configured.');
+    }
+
+    const diagnostics = {
+      selectorVersion: config.version,
+      matches: {},
+      counts: {},
+      missing: [],
+      invalidSelectors: [],
+    };
+
+    const root = firstMatch(document, projectConfig.root);
+    if (!root) {
+      throw new Error('Open an Upwork portfolio project first (the project modal must be visible).');
+    }
+    diagnostics.matches.root = projectConfig.root.find((selector) => {
+      try {
+        return Boolean(document.querySelector(selector));
+      } catch {
+        return false;
+      }
+    });
+
+    const params = new URLSearchParams(window.location.search);
+    const externalId = (params.get('p') || '').trim();
+    if (!/^\d+$/.test(externalId)) {
+      throw new Error('This page is missing a portfolio project id (?p=).');
+    }
+
+    let profileUrl = null;
+    try {
+      const path = window.location.pathname.replace(/\/+$/, '') || '/';
+      const match = /^\/freelancers\/([^/]+)$/.exec(path);
+      if (match?.[1]) {
+        profileUrl = `https://www.upwork.com/freelancers/${match[1]}`;
+        diagnostics.matches.profileUrl = 'location.pathname';
+      }
+    } catch {
+      /* ignore */
+    }
+    if (!profileUrl) {
+      const fromDom = readFirst(projectConfig.fields?.profileUrl, root, 'profileUrl', diagnostics);
+      profileUrl = fromDom ? absoluteUrl(fromDom) : null;
+    }
+    if (!profileUrl) {
+      throw new Error('Could not determine the freelancer profile URL.');
+    }
+
+    const title = readFirst(projectConfig.fields?.title, root, 'title', diagnostics);
+    if (!title) {
+      throw new Error('Could not read the portfolio project title.');
+    }
+
+    const column =
+      firstMatch(root, projectConfig.leftColumn) ??
+      root;
+    if (column !== root) {
+      diagnostics.matches.leftColumn = projectConfig.leftColumn.find((selector) => {
+        try {
+          return Boolean(root.querySelector(selector));
+        } catch {
+          return false;
+        }
+      });
+    }
+
+    const role = readLabeledField(column, projectConfig.labeledFields?.role, diagnostics, 'role');
+    const description = readLabeledField(
+      column,
+      projectConfig.labeledFields?.description,
+      diagnostics,
+      'description',
+    );
+    const technologies = queryFirstNonEmptyList(
+      projectConfig.lists?.technologies ?? { selectors: [] },
+      root,
+      'technologies',
+      diagnostics,
+    );
+    const publishedOn = readPublishedOn(column, projectConfig.publishedOn, diagnostics);
+    const imageUrls = readImageUrls(root, projectConfig.images, diagnostics);
+    const links = readExternalLinks(root, projectConfig.externalLinks, diagnostics);
+
+    return {
+      externalId,
+      profileUrl,
+      title,
+      role,
+      description,
+      technologies,
+      links,
+      imageUrls,
+      publishedOn,
+      rawSnapshot: {
+        source: 'upwork-portfolio-modal',
+        selectorVersion: config.version,
+        extraction: diagnostics,
+        scrapedAt: new Date().toISOString(),
+        pageUrl: window.location.href,
+      },
+    };
+  };
+
   global.CONSTELLATION_UPWORK_SCRAPER = {
     scrapeProfile,
+    scrapePortfolioProject,
   };
 })(globalThis);

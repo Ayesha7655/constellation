@@ -21,8 +21,10 @@ import { translateAuthRequestError } from '@/lib/user-messages';
 import {
   deleteFreelancerProfile,
   getFreelancerProfile,
+  listPortfolioProjects,
   updateFreelancerProfile,
   type FreelancerProfileDto,
+  type PortfolioProjectDto,
 } from '@/services/freelancer-api';
 import {
   profileDisplayName,
@@ -30,17 +32,117 @@ import {
   splitCsv,
   type ProfileFormValues,
 } from '@/components/org/upwork-profile-form-utils';
+import { PortfolioProjectPanel } from '@/components/org/portfolio-project-panel';
 
 const PROFILE_BASE = `${DASHBOARD_BASE_PATH.org}/upwork/profile`;
 
 type LoadState =
   | Readonly<{ status: 'loading' }>
   | Readonly<{ status: 'error' }>
-  | Readonly<{ status: 'ready'; profile: FreelancerProfileDto }>;
+  | Readonly<{
+      status: 'ready';
+      profile: FreelancerProfileDto;
+      projects: readonly PortfolioProjectDto[];
+      portfolioError: boolean;
+    }>;
 
 type UpworkProfileDetailViewProps = Readonly<{
   profileId: string;
 }>;
+
+function PortfolioSection({
+  projects,
+  portfolioError,
+  onRetry,
+  retryLabel,
+  onOpenProject,
+}: Readonly<{
+  projects: readonly PortfolioProjectDto[];
+  portfolioError: boolean;
+  onRetry: () => void;
+  retryLabel: string;
+  onOpenProject: (project: PortfolioProjectDto) => void;
+}>) {
+  const t = useTranslations('org.upwork.profile.portfolio');
+
+  return (
+    <section className="mt-8 space-y-4" data-testid={TEST_IDS.upworkProfile.portfolioSection}>
+      <h2 className="text-sm font-semibold text-foreground">{t('title')}</h2>
+      {portfolioError ? (
+        <div className="flex flex-col items-end gap-3">
+          <p className="w-full text-sm text-destructive">{t('loadError')}</p>
+          <Button type="button" variant="outline" onClick={onRetry} fullWidth={false}>
+            {retryLabel}
+          </Button>
+        </div>
+      ) : projects.length === 0 ? (
+        <p className="text-sm text-muted-foreground" data-testid={TEST_IDS.upworkProfile.portfolioEmpty}>
+          {t('empty')}
+        </p>
+      ) : (
+        <ul className="space-y-3">
+          {projects.map((project) => {
+            const thumbnail = project.imageUrls[0];
+            return (
+              <li
+                key={project.id}
+                data-testid={TEST_IDS.upworkProfile.portfolioCard(project.id)}
+                className="rounded-lg bg-muted/40 p-4"
+              >
+                <div className="flex gap-4">
+                  {thumbnail ? (
+                    // eslint-disable-next-line @next/next/no-img-element -- Upwork CDN URLs; not in next/image remotePatterns
+                    <img
+                      src={thumbnail}
+                      alt=""
+                      className="size-20 shrink-0 rounded-md object-cover"
+                    />
+                  ) : null}
+                  <div className="min-w-0 flex-1 space-y-2">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0 space-y-1">
+                        <h3 className="text-sm font-semibold text-foreground">{project.title}</h3>
+                        {project.role ? (
+                          <p className="text-xs text-muted-foreground">
+                            {t('role')}: {project.role}
+                          </p>
+                        ) : null}
+                      </div>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => onOpenProject(project)}
+                        testId={TEST_IDS.upworkProfile.portfolioOpen(project.id)}
+                        fullWidth={false}
+                      >
+                        {t('viewDetails')}
+                      </Button>
+                    </div>
+                    {project.description ? (
+                      <p className="line-clamp-3 text-sm text-foreground">{project.description}</p>
+                    ) : null}
+                    {project.technologies.length > 0 ? (
+                      <div className="flex flex-wrap gap-1.5">
+                        {project.technologies.map((tech) => (
+                          <StatusBadge key={tech} variant="secondary" label={tech} />
+                        ))}
+                      </div>
+                    ) : null}
+                    {project.publishedOn ? (
+                      <p className="text-xs text-muted-foreground">
+                        {t('publishedOn', { value: project.publishedOn })}
+                      </p>
+                    ) : null}
+                  </div>
+                </div>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </section>
+  );
+}
 
 export function UpworkProfileDetailView({ profileId }: UpworkProfileDetailViewProps) {
   const t = useTranslations('org.upwork.profile');
@@ -54,6 +156,8 @@ export function UpworkProfileDetailView({ profileId }: UpworkProfileDetailViewPr
   const [initialValues, setInitialValues] = useState<ProfileFormValues>(profileToValues(null));
   const [busy, setBusy] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [selectedProject, setSelectedProject] = useState<PortfolioProjectDto | null>(null);
+  const [portfolioPanelOpen, setPortfolioPanelOpen] = useState(false);
 
   const profile = loadState.status === 'ready' ? loadState.profile : null;
 
@@ -98,8 +202,16 @@ export function UpworkProfileDetailView({ profileId }: UpworkProfileDetailViewPr
     setLoadState({ status: 'loading' });
     try {
       const result = await getFreelancerProfile(profileId);
+      let projects: PortfolioProjectDto[] = [];
+      let portfolioError = false;
+      try {
+        const portfolio = await listPortfolioProjects(profileId);
+        projects = [...portfolio.projects];
+      } catch {
+        portfolioError = true;
+      }
       setInitialValues(profileToValues(result.profile));
-      setLoadState({ status: 'ready', profile: result.profile });
+      setLoadState({ status: 'ready', profile: result.profile, projects, portfolioError });
     } catch (error) {
       setLoadState({ status: 'error' });
       showUserErrorToast(translateAuthRequestError(error, tErrors));
@@ -114,8 +226,16 @@ export function UpworkProfileDetailView({ profileId }: UpworkProfileDetailViewPr
     setRefreshing(true);
     try {
       const result = await getFreelancerProfile(profileId);
+      let projects: PortfolioProjectDto[] = [];
+      let portfolioError = false;
+      try {
+        const portfolio = await listPortfolioProjects(profileId);
+        projects = [...portfolio.projects];
+      } catch {
+        portfolioError = true;
+      }
       setInitialValues(profileToValues(result.profile));
-      setLoadState({ status: 'ready', profile: result.profile });
+      setLoadState({ status: 'ready', profile: result.profile, projects, portfolioError });
     } catch (error) {
       showUserErrorToast(translateAuthRequestError(error, tErrors));
     } finally {
@@ -140,7 +260,16 @@ export function UpworkProfileDetailView({ profileId }: UpworkProfileDetailViewPr
         profileUrl: values.profileUrl,
       });
       setInitialValues(profileToValues(result.profile));
-      setLoadState({ status: 'ready', profile: result.profile });
+      setLoadState((prev) =>
+        prev.status === 'ready'
+          ? { ...prev, profile: result.profile }
+          : {
+              status: 'ready',
+              profile: result.profile,
+              projects: [],
+              portfolioError: false,
+            },
+      );
       showUserSuccessToast(t('saved'));
     } catch (error) {
       showUserErrorToast(translateAuthRequestError(error, tErrors));
@@ -160,6 +289,39 @@ export function UpworkProfileDetailView({ profileId }: UpworkProfileDetailViewPr
       setBusy(false);
     }
   }, [profileId, router, t, tErrors]);
+
+  const onOpenProject = useCallback((project: PortfolioProjectDto) => {
+    setSelectedProject(project);
+    setPortfolioPanelOpen(true);
+  }, []);
+
+  const onPortfolioPanelOpenChange = useCallback((next: boolean) => {
+    setPortfolioPanelOpen(next);
+    if (!next) {
+      setSelectedProject(null);
+    }
+  }, []);
+
+  const onPortfolioDeleted = useCallback((projectId: string) => {
+    setLoadState((prev) =>
+      prev.status === 'ready'
+        ? { ...prev, projects: prev.projects.filter((item) => item.id !== projectId) }
+        : prev,
+    );
+    setSelectedProject(null);
+  }, []);
+
+  const onPortfolioUpdated = useCallback((project: PortfolioProjectDto) => {
+    setSelectedProject(project);
+    setLoadState((prev) =>
+      prev.status === 'ready'
+        ? {
+            ...prev,
+            projects: prev.projects.map((item) => (item.id === project.id ? project : item)),
+          }
+        : prev,
+    );
+  }, []);
 
   const renderForm = useCallback(({ isSubmitting }: { isSubmitting: boolean }) => (
     <Form id={formId} className="space-y-6">
@@ -241,6 +403,24 @@ export function UpworkProfileDetailView({ profileId }: UpworkProfileDetailViewPr
       <Formik enableReinitialize initialValues={initialValues} validationSchema={schema} onSubmit={handleSubmit}>
         {renderForm}
       </Formik>
+      {loadState.status === 'ready' ? (
+        <PortfolioSection
+          projects={loadState.projects}
+          portfolioError={loadState.portfolioError}
+          onRetry={onRefresh}
+          retryLabel={t('retry')}
+          onOpenProject={onOpenProject}
+        />
+      ) : null}
+      <PortfolioProjectPanel
+        profileId={profileId}
+        project={selectedProject}
+        open={portfolioPanelOpen}
+        canDelete={canUpdate}
+        onOpenChange={onPortfolioPanelOpenChange}
+        onDeleted={onPortfolioDeleted}
+        onProjectUpdated={onPortfolioUpdated}
+      />
     </AdminPageLayout>
   );
 }

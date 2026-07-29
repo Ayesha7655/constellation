@@ -5046,6 +5046,11 @@
         "org_required": "تحتاج إلى مؤسسة لمزامنة ملف Upwork.",
         "import_invalid": "هذه ليست صفحة ملف Upwork صالحة. افتح ملف مستقل وحاول مرة أخرى."
       },
+      "portfolio_project": {
+        "import_invalid": "تعذّر استيراد مشروع المحفظة. افتح المشروع على Upwork وحاول مرة أخرى.",
+        "profile_required": "استورد ملف هذا المستقل إلى Constellation أولاً، ثم زامن مشروع المحفظة.",
+        "not_found": "لم يتم العثور على مشروع المحفظة."
+      },
       "search_filters": {
         "not_found": "لا توجد عوامل بحث محفوظة بعد.",
         "generate_failed": "تعذّر إنشاء عوامل البحث. حاول مرة أخرى.",
@@ -5692,6 +5697,24 @@
         "unnamedProfile": "ملف بلا عنوان",
         "noProfiles": "لا توجد ملفات بعد",
         "emptyState": "أضف ملفاً فارغاً أو أكّد استيراد الإضافة للبدء.",
+        "portfolio": {
+          "title": "المحفظة",
+          "empty": "لا توجد مشاريع محفظة بعد. افتح مشروعاً على Upwork (?p=) وزامنه عبر إضافة Chrome.",
+          "role": "الدور",
+          "publishedOn": "نُشر {value}",
+          "loadError": "تعذّر تحميل مشاريع المحفظة.",
+          "viewDetails": "عرض التفاصيل",
+          "untitled": "مشروع بلا عنوان",
+          "description": "الوصف",
+          "technologies": "التقنيات",
+          "links": "الروابط",
+          "images": "الصور",
+          "delete": "حذف المشروع",
+          "deleteTitle": "حذف مشروع المحفظة؟",
+          "deleteDescription": "إزالة «{title}» من هذا الملف؟ يمكنك مزامنته مرة أخرى من Upwork لاحقاً.",
+          "deleteConfirm": "حذف",
+          "deleted": "تم حذف مشروع المحفظة."
+        },
         "fields": {
           "label": "التسمية",
           "title": "المسمى",
