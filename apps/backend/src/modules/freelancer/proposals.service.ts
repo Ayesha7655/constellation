@@ -13,6 +13,7 @@ import {
   PROPOSAL_STYLE_EXTRACT_MIN_EXAMPLES,
   assertProposalAttachmentStorageKey,
   buildProposalAttachmentStorageKey,
+  buildUpworkPortfolioProjectUrl,
   isProposalAttachmentStorageKey,
   isUpworkJobUrl,
   normalizeUpworkJobUrl,
@@ -23,6 +24,7 @@ import { codedBadRequest, codedNotFound } from '../../common/exceptions/coded-ht
 import { requireAuthUserId } from '../../common/utils/require-auth-user-id';
 import {
   FREELANCER_PROFILE_ATTRS,
+  PORTFOLIO_PROJECT_ATTRS,
   PROPOSAL_ATTACHMENT_ATTRS,
   PROPOSAL_DRAFT_ATTRS,
   PROPOSAL_EXAMPLE_ATTRS,
@@ -36,6 +38,7 @@ import {
   ProposalExampleSource,
 } from '../../database/enums';
 import { FreelancerProfile } from '../../database/models/freelancer-profile.model';
+import { PortfolioProject } from '../../database/models/portfolio-project.model';
 import { ProposalAttachment } from '../../database/models/proposal-attachment.model';
 import { ProposalDraft } from '../../database/models/proposal-draft.model';
 import { ProposalExample } from '../../database/models/proposal-example.model';
@@ -49,6 +52,10 @@ import type { SaveProposalDraftDto } from './dto/save-proposal-draft.dto';
 import type { UpsertProposalStylePackDto } from './dto/upsert-proposal-style-pack.dto';
 import { OrgContextService } from './org-context.service';
 import { ProposalAttachmentUploadRegistry } from './proposal-attachment-upload-registry.service';
+import {
+  ensurePortfolioLinksInBody,
+  rankPortfolioProjects,
+} from './proposals/rank-portfolio-projects';
 import { rankProposalExamples, rankedExampleIds } from './proposals/rank-proposal-examples';
 
 const ALLOWED_MIME = new Set<string>(PROPOSAL_ATTACHMENT_ALLOWED_MIME_TYPES);
@@ -119,6 +126,7 @@ export class ProposalsService {
     @InjectModel(ProposalDraft) private readonly draftModel: typeof ProposalDraft,
     @InjectModel(ProposalAttachment) private readonly attachmentModel: typeof ProposalAttachment,
     @InjectModel(UpworkJob) private readonly jobModel: typeof UpworkJob,
+    @InjectModel(PortfolioProject) private readonly portfolioModel: typeof PortfolioProject,
     private readonly orgContext: OrgContextService,
     private readonly aiServiceClient: AiServiceClient,
     private readonly objectStorage: ObjectStorageService,
@@ -345,7 +353,7 @@ export class ProposalsService {
     const profile = await this.requireOwnedProfile(orgId, profileId);
     const job = await this.requireOwnedJob(orgId, jobId);
 
-    const [stylePack, examples] = await Promise.all([
+    const [stylePack, examples, portfolioRows] = await Promise.all([
       this.stylePackModel.findOne({
         where: { orgId, freelancerProfileId: profileId },
         attributes: [...PROPOSAL_STYLE_PACK_ATTRS],
@@ -355,12 +363,35 @@ export class ProposalsService {
         attributes: [...PROPOSAL_EXAMPLE_ATTRS],
         order: [['createdAt', 'DESC']],
       }),
+      this.portfolioModel.findAll({
+        where: { freelancerProfileId: profileId },
+        attributes: [...PORTFOLIO_PROJECT_ATTRS],
+        order: [
+          ['scraped_at', 'DESC'],
+          ['created_at', 'DESC'],
+        ],
+      }),
     ]);
 
     const preferences = asPreferences(stylePack?.preferences ?? {});
     const jobText = `${job.title}\n${job.description}`;
     const selectedExamples = rankProposalExamples(jobText, job.skills ?? [], examples);
     const selectedIds = rankedExampleIds(jobText, job.skills ?? [], examples);
+    const { portfolio: selectedPortfolio, portfolioIds } = rankPortfolioProjects(
+      jobText,
+      job.skills ?? [],
+      portfolioRows.map((row) => ({
+        id: row.id,
+        title: row.title,
+        role: row.role,
+        description: row.description,
+        technologies: Array.isArray(row.technologies) ? row.technologies : [],
+        projectUrl:
+          row.projectUrl ??
+          buildUpworkPortfolioProjectUrl(profile.profileUrl, row.externalId),
+        links: Array.isArray(row.links) ? row.links : [],
+      })),
+    );
 
     const { body } = await this.aiServiceClient.generateProposal({
       stylePack: preferences,
@@ -383,10 +414,13 @@ export class ProposalsService {
         clientLocation: job.clientLocation,
       },
       examples: selectedExamples,
+      portfolio: selectedPortfolio,
     });
 
-    const trimmedBody = body.trim().slice(0, PROPOSAL_BODY_MAX_LENGTH);
-    const modelMeta = { exampleIds: selectedIds };
+    const trimmedBody = ensurePortfolioLinksInBody(body, selectedPortfolio)
+      .trim()
+      .slice(0, PROPOSAL_BODY_MAX_LENGTH);
+    const modelMeta = { exampleIds: selectedIds, portfolioIds };
     const draftSource =
       source === ProposalDraftSource.EXTENSION_JOB_PAGE
         ? ProposalDraftSource.EXTENSION_JOB_PAGE

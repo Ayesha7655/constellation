@@ -9,6 +9,7 @@ type ScrapePortfolioResponse =
 export type ScrapedPortfolioProject = Readonly<{
   externalId: string;
   profileUrl: string;
+  projectUrl: string;
   title: string;
   role: string | null;
   description: string | null;

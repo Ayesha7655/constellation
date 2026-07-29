@@ -3,7 +3,9 @@ import { InjectModel } from '@nestjs/sequelize';
 import { UniqueConstraintError } from 'sequelize';
 import {
   API_ERROR_CODES,
+  buildUpworkPortfolioProjectUrl,
   normalizeUpworkFreelancerProfileUrl,
+  parseUpworkPortfolioProjectId,
 } from '@constellation/shared';
 import { codedBadRequest, codedNotFound } from '../../common/exceptions/coded-http.exception';
 import {
@@ -22,6 +24,7 @@ export type PortfolioProjectView = Readonly<{
   id: string;
   freelancerProfileId: string;
   externalId: string;
+  projectUrl: string | null;
   title: string;
   role: string | null;
   description: string | null;
@@ -64,11 +67,27 @@ function cleanLinks(values: ImportPortfolioProjectDto['links']): PortfolioProjec
   return out;
 }
 
-function toView(row: PortfolioProject): PortfolioProjectView {
+function resolveProjectUrl(
+  scrapedProjectUrl: string | undefined,
+  profileUrl: string,
+  externalId: string,
+): string | null {
+  const scraped = typeof scrapedProjectUrl === 'string' ? scrapedProjectUrl.trim() : '';
+  if (scraped && parseUpworkPortfolioProjectId(scraped) === externalId) {
+    return buildUpworkPortfolioProjectUrl(scraped, externalId) ?? scraped.slice(0, 600);
+  }
+  return buildUpworkPortfolioProjectUrl(profileUrl, externalId);
+}
+
+function toView(row: PortfolioProject, profileUrlFallback?: string | null): PortfolioProjectView {
+  const stored = typeof row.projectUrl === 'string' && row.projectUrl.trim() ? row.projectUrl.trim() : null;
+  const projectUrl =
+    stored ?? buildUpworkPortfolioProjectUrl(profileUrlFallback, row.externalId);
   return {
     id: row.id,
     freelancerProfileId: row.freelancerProfileId,
     externalId: row.externalId,
+    projectUrl,
     title: row.title,
     role: row.role,
     description: row.description,
@@ -123,8 +142,10 @@ export class PortfolioProjectsService {
       typeof dto.publishedOn === 'string' && dto.publishedOn.trim()
         ? dto.publishedOn.trim().slice(0, 120)
         : null;
+    const projectUrl = resolveProjectUrl(dto.projectUrl, profileUrl, externalId);
     const scrapedAt = new Date();
     const payload = {
+      projectUrl,
       title,
       role,
       description,
@@ -147,7 +168,7 @@ export class PortfolioProjectsService {
         rawSnapshot: dto.rawSnapshot ?? existing.rawSnapshot,
       });
       await existing.reload({ attributes: [...PORTFOLIO_PROJECT_ATTRS] });
-      return { project: toView(existing), created: false };
+      return { project: toView(existing, profileUrl), created: false };
     }
 
     try {
@@ -158,7 +179,7 @@ export class PortfolioProjectsService {
         rawSnapshot: dto.rawSnapshot ?? null,
       });
       await created.reload({ attributes: [...PORTFOLIO_PROJECT_ATTRS] });
-      return { project: toView(created), created: true };
+      return { project: toView(created, profileUrl), created: true };
     } catch (error) {
       // Concurrent sync hit unique (profile_id, external_id) — retry as update.
       if (!(error instanceof UniqueConstraintError)) throw error;
@@ -172,13 +193,13 @@ export class PortfolioProjectsService {
         rawSnapshot: dto.rawSnapshot ?? raced.rawSnapshot,
       });
       await raced.reload({ attributes: [...PORTFOLIO_PROJECT_ATTRS] });
-      return { project: toView(raced), created: false };
+      return { project: toView(raced, profileUrl), created: false };
     }
   }
 
   async listForProfile(userId: string | undefined, profileId: string) {
     const { orgId } = await this.orgContext.requireOrgIdForUser(userId);
-    await this.requireOrgProfile(orgId, profileId);
+    const profile = await this.requireOrgProfile(orgId, profileId);
 
     const rows = await this.portfolioModel.findAll({
       where: { freelancerProfileId: profileId },
@@ -188,12 +209,12 @@ export class PortfolioProjectsService {
         ['created_at', 'DESC'],
       ],
     });
-    return { projects: rows.map(toView) };
+    return { projects: rows.map((row) => toView(row, profile.profileUrl)) };
   }
 
   async getProject(userId: string | undefined, profileId: string, projectId: string) {
     const { orgId } = await this.orgContext.requireOrgIdForUser(userId);
-    await this.requireOrgProfile(orgId, profileId);
+    const profile = await this.requireOrgProfile(orgId, profileId);
     const row = await this.portfolioModel.findOne({
       where: { id: projectId, freelancerProfileId: profileId },
       attributes: [...PORTFOLIO_PROJECT_ATTRS],
@@ -201,7 +222,7 @@ export class PortfolioProjectsService {
     if (!row) {
       throw codedNotFound(API_ERROR_CODES.PORTFOLIO_PROJECT_NOT_FOUND);
     }
-    return { project: toView(row) };
+    return { project: toView(row, profile.profileUrl) };
   }
 
   async deleteProject(userId: string | undefined, profileId: string, projectId: string) {
@@ -221,7 +242,7 @@ export class PortfolioProjectsService {
   private async requireOrgProfile(orgId: string, profileId: string) {
     const profile = await this.profileModel.findOne({
       where: { id: profileId, orgId },
-      attributes: ['id'],
+      attributes: ['id', 'profileUrl'],
     });
     if (!profile) {
       throw codedNotFound(API_ERROR_CODES.FREELANCER_PROFILE_NOT_FOUND);

@@ -668,9 +668,12 @@
     const imageUrls = readImageUrls(root, projectConfig.images, diagnostics);
     const links = readExternalLinks(root, projectConfig.externalLinks, diagnostics);
 
+    const projectUrl = `${profileUrl.replace(/\/+$/, '')}?p=${externalId}`;
+
     return {
       externalId,
       profileUrl,
+      projectUrl,
       title,
       role,
       description,

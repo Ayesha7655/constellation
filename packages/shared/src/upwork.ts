@@ -279,6 +279,20 @@ export function isUpworkPortfolioProjectUrl(raw: string | null | undefined): boo
   );
 }
 
+/**
+ * Canonical Upwork portfolio project page URL: `{profileUrl}?p={externalId}`.
+ * Prefer a scraped `projectUrl` when present; otherwise build from profile + id.
+ */
+export function buildUpworkPortfolioProjectUrl(
+  profileUrl: string | null | undefined,
+  externalId: string | null | undefined,
+): string | null {
+  const base = normalizeUpworkFreelancerProfileUrl(profileUrl);
+  const id = typeof externalId === 'string' ? externalId.trim() : '';
+  if (!base || !/^\d+$/.test(id)) return null;
+  return `${base}?p=${id}`;
+}
+
 export type UpworkPortfolioProjectLink = Readonly<{
   label?: string;
   url: string;
@@ -288,6 +302,8 @@ export type UpworkPortfolioProjectLink = Readonly<{
 export type ScrapedUpworkPortfolioProject = Readonly<{
   externalId: string;
   profileUrl: string;
+  /** Full Upwork project page URL including `?p=`. */
+  projectUrl: string;
   title: string;
   role: string | null;
   description: string | null;

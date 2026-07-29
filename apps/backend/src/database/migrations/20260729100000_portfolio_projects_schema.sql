@@ -4,6 +4,7 @@ CREATE TABLE IF NOT EXISTS "portfolio_projects" (
   "id" UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   "freelancer_profile_id" UUID NOT NULL REFERENCES "freelancer_profiles" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
   "external_id" TEXT NOT NULL,
+  "project_url" TEXT NULL,
   "title" TEXT NOT NULL,
   "role" TEXT NULL,
   "description" TEXT NULL,

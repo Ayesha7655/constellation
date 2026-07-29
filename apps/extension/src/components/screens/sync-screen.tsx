@@ -73,8 +73,8 @@ export function SyncScreen({
   const heading = isJobPage
     ? 'Generate a proposal'
     : isPortfolioPage
-      ? 'Resync a portfolio project'
-      : hasProfiles
+      ? 'Sync a portfolio project'
+      : isProfilePage && hasProfiles
         ? 'Resync an Upwork profile'
         : 'Sync an Upwork profile';
 
@@ -82,7 +82,7 @@ export function SyncScreen({
     ? 'Use your default profile to draft a proposal for this job, copy it, and save it in Constellation.'
     : isPortfolioPage
       ? 'Scrape the open portfolio project and create or update it on the matching freelancer profile in Constellation.'
-      : hasProfiles
+      : isProfilePage && hasProfiles
         ? 'Scrape the profile in your active tab. Matched profiles update after you confirm in Constellation.'
         : 'Import the profile open in your active tab as a draft for review in Constellation.';
 
@@ -198,11 +198,11 @@ export function SyncScreen({
           disabled={busy}
         >
           <Briefcase className={syncing ? 'spin' : ''} size={17} aria-hidden="true" />
-          {syncing ? 'Resyncing portfolio…' : 'Resync portfolio project'}
+          {syncing ? 'Syncing portfolio…' : 'Sync portfolio project'}
         </button>
       ) : (
         <button
-          data-testid={hasProfiles ? 'extension-resync-profile' : 'extension-sync-profile'}
+          data-testid={isProfilePage && hasProfiles ? 'extension-resync-profile' : 'extension-sync-profile'}
           className="button button-primary sync-button"
           type="button"
           onClick={handleSync}
@@ -210,10 +210,10 @@ export function SyncScreen({
         >
           <RefreshCw className={syncing ? 'spin' : ''} size={17} aria-hidden="true" />
           {syncing
-            ? hasProfiles
+            ? isProfilePage && hasProfiles
               ? 'Resyncing…'
               : 'Syncing profile…'
-            : hasProfiles
+            : isProfilePage && hasProfiles
               ? 'Resync current tab'
               : 'Sync profile'}
         </button>

@@ -5704,6 +5704,8 @@
           "publishedOn": "Published {value}",
           "loadError": "Could not load portfolio projects.",
           "viewDetails": "View details",
+          "openOnUpwork": "Open on Upwork",
+          "projectUrl": "Upwork project",
           "untitled": "Untitled project",
           "description": "Description",
           "technologies": "Technologies",

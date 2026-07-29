@@ -251,6 +251,7 @@ export const PORTFOLIO_PROJECT_ATTRS = [
   'id',
   'freelancerProfileId',
   'externalId',
+  'projectUrl',
   'title',
   'role',
   'description',

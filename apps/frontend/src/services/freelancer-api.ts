@@ -47,6 +47,7 @@ export type PortfolioProjectDto = Readonly<{
   id: string;
   freelancerProfileId: string;
   externalId: string;
+  projectUrl: string | null;
   title: string;
   role: string | null;
   description: string | null;

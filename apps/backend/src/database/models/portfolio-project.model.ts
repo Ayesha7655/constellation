@@ -39,6 +39,9 @@ export class PortfolioProject extends Model {
   @Column({ type: DataType.TEXT, allowNull: false, field: 'external_id' })
   declare externalId: string;
 
+  @Column({ type: DataType.TEXT, allowNull: true, field: 'project_url' })
+  declare projectUrl: string | null;
+
   @Column({ type: DataType.TEXT, allowNull: false })
   declare title: string;
 

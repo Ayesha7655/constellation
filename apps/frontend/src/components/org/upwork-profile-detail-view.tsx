@@ -107,6 +107,17 @@ function PortfolioSection({
                             {t('role')}: {project.role}
                           </p>
                         ) : null}
+                        {project.projectUrl ? (
+                          <a
+                            href={project.projectUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="inline-flex text-xs font-medium text-primary hover:underline"
+                            data-testid={TEST_IDS.upworkProfile.portfolioOpenUpwork(project.id)}
+                          >
+                            {t('openOnUpwork')}
+                          </a>
+                        ) : null}
                       </div>
                       <Button
                         type="button"

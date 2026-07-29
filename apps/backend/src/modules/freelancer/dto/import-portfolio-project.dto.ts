@@ -38,6 +38,12 @@ export class ImportPortfolioProjectDto {
   @MaxLength(500)
   profileUrl!: string;
 
+  @ApiPropertyOptional({ description: 'Full Upwork portfolio project URL including ?p=' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(600)
+  projectUrl?: string;
+
   @ApiProperty()
   @IsString()
   @MinLength(1)

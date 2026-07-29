@@ -5704,6 +5704,8 @@
           "publishedOn": "نُشر {value}",
           "loadError": "تعذّر تحميل مشاريع المحفظة.",
           "viewDetails": "عرض التفاصيل",
+          "openOnUpwork": "فتح على Upwork",
+          "projectUrl": "مشروع Upwork",
           "untitled": "مشروع بلا عنوان",
           "description": "الوصف",
           "technologies": "التقنيات",

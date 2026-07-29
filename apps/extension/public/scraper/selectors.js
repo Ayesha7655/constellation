@@ -7,7 +7,7 @@
  * cannot leak into the main profile fields.
  */
 globalThis.CONSTELLATION_UPWORK_SELECTORS = {
-  version: '2026-07-29.portfolio-project-v2',
+  version: '2026-07-29.portfolio-project-v3',
 
   profileReady: [
     '[data-qa-profile-viewer-uid]',
@@ -478,7 +478,7 @@ globalThis.CONSTELLATION_UPWORK_SELECTORS = {
         '.portfolio-v2-viewer .span-lg-4',
         '.air3-modal-portfolio-v2-viewer-modal .span-lg-4',
       ],
-      selectors: ['a[href^="https://"]', 'a[href^="http://"]'],
+      selectors: ['a[href^="https://"]', 'a[href^="http://"]', 'a[href^="//"]', 'a[href]:not([href^="#"]):not([href^="javascript:"])'],
       excludeHostSuffixes: ['upwork.com'],
       maxItems: 20,
     },

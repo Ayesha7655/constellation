@@ -42,6 +42,18 @@ export type ProposalGenerationExample = {
   jobContext: string | null;
 };
 
+/** Ranked portfolio project cited when generating a proposal. */
+export type ProposalGenerationPortfolioProject = {
+  title: string;
+  role: string | null;
+  description: string | null;
+  technologies: string[];
+  /** Upwork portfolio page URL (`?p=`). */
+  projectUrl: string | null;
+  /** Non-Upwork demo / case-study links from the project. */
+  links: ReadonlyArray<{ label?: string; url: string }>;
+};
+
 /** Metadata for a document attached to a proposal draft or example. */
 export type ProposalAttachmentMeta = {
   id: string;
@@ -57,6 +69,8 @@ export type GenerateProposalRequest = {
   profile: ProposalGenerationProfile;
   job: ProposalGenerationJob;
   examples: ProposalGenerationExample[];
+  /** Job-relevant portfolio projects (may be empty). */
+  portfolio?: ProposalGenerationPortfolioProject[];
 };
 
 export type GenerateProposalResponse = {
@@ -74,6 +88,8 @@ export type ExtractStylePackResponse = {
 export const PROPOSAL_BODY_MAX_LENGTH = 8000;
 export const PROPOSAL_EXAMPLE_BODY_MAX_LENGTH = 8000;
 export const PROPOSAL_EXAMPLE_RETRIEVAL_K = 5;
+/** Max portfolio projects injected into proposal generation. */
+export const PROPOSAL_PORTFOLIO_RETRIEVAL_K = 3;
 /** Minimum uploaded examples before style-pack extraction is allowed. */
 export const PROPOSAL_STYLE_EXTRACT_MIN_EXAMPLES = 2;
 

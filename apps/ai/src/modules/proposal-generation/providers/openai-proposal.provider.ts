@@ -46,6 +46,7 @@ export class OpenAiProposalProvider {
             profile: input.profile as unknown as Record<string, unknown>,
             job: input.job as unknown as Record<string, unknown>,
             examples: input.examples as unknown as Array<Record<string, unknown>>,
+            portfolio: (input.portfolio ?? []) as unknown as Array<Record<string, unknown>>,
           }),
         },
       ],

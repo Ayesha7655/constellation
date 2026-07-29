@@ -144,6 +144,21 @@ export function PortfolioProjectPanel({
               </p>
             ) : null}
 
+            {project.projectUrl ? (
+              <section className="space-y-2">
+                <h3 className="text-sm font-semibold text-foreground">{t('projectUrl')}</h3>
+                <a
+                  href={project.projectUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="break-all text-sm font-medium text-primary hover:underline"
+                  data-testid={TEST_IDS.upworkProfile.portfolioPanelOpenUpwork}
+                >
+                  {t('openOnUpwork')}
+                </a>
+              </section>
+            ) : null}
+
             {project.description ? (
               <section className="space-y-2">
                 <h3 className="text-sm font-semibold text-foreground">{t('description')}</h3>
