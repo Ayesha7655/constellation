@@ -585,6 +585,9 @@
   const scrapePortfolioProject = async () => {
     const projectConfig = config.portfolioProject;
     if (!projectConfig) {
+      console.error('[constellation:portfolio] extractor: portfolioProject config missing', {
+        selectorVersion: config.version,
+      });
       throw new Error('Portfolio project scraper is not configured.');
     }
 
@@ -598,6 +601,11 @@
 
     const root = firstMatch(document, projectConfig.root);
     if (!root) {
+      console.error('[constellation:portfolio] extractor: modal root not found', {
+        href: window.location.href,
+        selectorVersion: config.version,
+        rootSelectors: projectConfig.root,
+      });
       throw new Error('Open an Upwork portfolio project first (the project modal must be visible).');
     }
     diagnostics.matches.root = projectConfig.root.find((selector) => {
@@ -611,6 +619,10 @@
     const params = new URLSearchParams(window.location.search);
     const externalId = (params.get('p') || '').trim();
     if (!/^\d+$/.test(externalId)) {
+      console.error('[constellation:portfolio] extractor: missing/invalid ?p=', {
+        href: window.location.href,
+        p: params.get('p'),
+      });
       throw new Error('This page is missing a portfolio project id (?p=).');
     }
 
@@ -630,11 +642,19 @@
       profileUrl = fromDom ? absoluteUrl(fromDom) : null;
     }
     if (!profileUrl) {
+      console.error('[constellation:portfolio] extractor: profileUrl unresolved', {
+        href: window.location.href,
+        diagnostics,
+      });
       throw new Error('Could not determine the freelancer profile URL.');
     }
 
     const title = readFirst(projectConfig.fields?.title, root, 'title', diagnostics);
     if (!title) {
+      console.error('[constellation:portfolio] extractor: title missing', {
+        href: window.location.href,
+        diagnostics,
+      });
       throw new Error('Could not read the portfolio project title.');
     }
 
@@ -669,6 +689,18 @@
     const links = readExternalLinks(root, projectConfig.externalLinks, diagnostics);
 
     const projectUrl = `${profileUrl.replace(/\/+$/, '')}?p=${externalId}`;
+
+    console.info('[constellation:portfolio] extractor ok', {
+      selectorVersion: config.version,
+      externalId,
+      profileUrl,
+      projectUrl,
+      title,
+      matches: diagnostics.matches,
+      counts: diagnostics.counts,
+      missing: diagnostics.missing,
+      invalidSelectors: diagnostics.invalidSelectors,
+    });
 
     return {
       externalId,

@@ -140,8 +140,12 @@ export async function scrapeActiveProfile(tab: chrome.tabs.Tab): Promise<Scraped
 
 export async function scrapeActivePortfolioProject(tab: chrome.tabs.Tab): Promise<ScrapedPortfolioProject> {
   const tabId = tab.id;
-  if (!tabId) throw new Error('Open an Upwork portfolio project first.');
+  if (!tabId) {
+    console.error('[constellation:portfolio] scrape aborted: missing tab id', { url: tab.url ?? null });
+    throw new Error('Open an Upwork portfolio project first.');
+  }
 
+  console.info('[constellation:portfolio] scrape message send', { tabId, url: tab.url ?? null });
   return new Promise((resolve, reject) => {
     chrome.tabs.sendMessage(
       tabId,
@@ -149,10 +153,20 @@ export async function scrapeActivePortfolioProject(tab: chrome.tabs.Tab): Promis
       (response: ScrapePortfolioResponse | undefined) => {
         const runtimeError = chrome.runtime.lastError;
         if (runtimeError) {
+          console.error('[constellation:portfolio] scrape content-script unreachable', {
+            tabId,
+            url: tab.url ?? null,
+            runtimeError: runtimeError.message,
+          });
           reject(new Error('Refresh the Upwork page, then try again.'));
           return;
         }
         if (!response?.ok) {
+          console.error('[constellation:portfolio] scrape content-script error', {
+            tabId,
+            url: tab.url ?? null,
+            error: response?.error ?? '(no response)',
+          });
           reject(new Error(response?.error || 'Could not read this portfolio project.'));
           return;
         }

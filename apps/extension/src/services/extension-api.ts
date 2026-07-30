@@ -13,7 +13,7 @@ type PairResponse = Readonly<{
   refreshToken?: unknown;
 }>;
 
-class ExtensionApiError extends Error {
+export class ExtensionApiError extends Error {
   constructor(
     message: string,
     readonly status: number,
@@ -233,12 +233,38 @@ export async function importPortfolioProject(
   session: StoredSession,
   project: ScrapedPortfolioProject,
 ): Promise<{ session: StoredSession; created: boolean; title: string }> {
-  const result = await authenticatedFetch(session, '/organizations/me/portfolio-projects/import', {
-    method: 'POST',
-    body: JSON.stringify(project),
+  const path = '/organizations/me/portfolio-projects/import';
+  console.info('[constellation:portfolio] api import request', {
+    apiUrl: session.apiUrl,
+    path,
+    externalId: project.externalId,
+    profileUrl: project.profileUrl,
+    projectUrl: project.projectUrl,
+    title: project.title,
   });
+  let result: { response: Response; session: StoredSession };
+  try {
+    result = await authenticatedFetch(session, path, {
+      method: 'POST',
+      body: JSON.stringify(project),
+    });
+  } catch (error) {
+    console.error('[constellation:portfolio] api import transport failed', {
+      apiUrl: session.apiUrl,
+      path,
+      error: error instanceof Error ? error.message : String(error),
+    });
+    throw error;
+  }
   if (!result.response.ok) {
     const err = await readError(result.response);
+    console.error('[constellation:portfolio] api import rejected', {
+      apiUrl: result.session.apiUrl,
+      path,
+      status: result.response.status,
+      code: err.code,
+      message: err.message,
+    });
     throw new ExtensionApiError(err.message, result.response.status, err.code);
   }
 
@@ -246,6 +272,12 @@ export async function importPortfolioProject(
     created?: unknown;
     project?: { title?: unknown };
   };
+
+  console.info('[constellation:portfolio] api import response', {
+    status: result.response.status,
+    created: body.created === true,
+    title: typeof body.project?.title === 'string' ? body.project.title : project.title,
+  });
 
   return {
     session: result.session,

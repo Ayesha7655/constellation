@@ -16,6 +16,7 @@ import {
 import {
   connectWithCode,
   disconnect,
+  ExtensionApiError,
   generateProposalFromJobUrl,
   importPortfolioProject,
   importProfileDraft,
@@ -158,18 +159,45 @@ export function useExtensionController() {
   }, [activeTab, connection, refreshProfiles]);
 
   const syncPortfolio = useCallback(async () => {
-    if (connection.status !== 'connected' || !activeTab) return;
+    if (connection.status !== 'connected' || !activeTab) {
+      console.warn('[constellation:portfolio] sync aborted: not connected or no active tab', {
+        connectionStatus: connection.status,
+        hasTab: Boolean(activeTab),
+      });
+      return;
+    }
     if (!isUpworkPortfolioProjectTab(activeTab)) {
+      console.warn('[constellation:portfolio] sync aborted: tab is not a portfolio project URL', {
+        url: activeTab.url ?? null,
+      });
       setFeedback({ tone: 'error', message: 'Open an Upwork portfolio project (?p=), then try again.' });
       return;
     }
 
     setAction('syncing');
     setFeedback({ tone: 'info', message: 'Reading the portfolio project…' });
+    console.info('[constellation:portfolio] sync start', {
+      tabId: activeTab.id ?? null,
+      url: activeTab.url ?? null,
+      apiUrl: connection.session.apiUrl,
+    });
     try {
       const project = await scrapeActivePortfolioProject(activeTab);
+      console.info('[constellation:portfolio] scrape ok', {
+        externalId: project.externalId,
+        profileUrl: project.profileUrl,
+        projectUrl: project.projectUrl,
+        title: project.title,
+        techCount: project.technologies.length,
+        linkCount: project.links.length,
+        imageCount: project.imageUrls.length,
+      });
       const result = await importPortfolioProject(connection.session, project);
       setConnection({ status: 'connected', session: result.session });
+      console.info('[constellation:portfolio] import ok', {
+        created: result.created,
+        title: result.title,
+      });
       setFeedback({
         tone: 'success',
         message: result.created
@@ -178,6 +206,13 @@ export function useExtensionController() {
       });
     } catch (error) {
       const message = toFriendlyError(error, 'syncPortfolio');
+      const detail =
+        error instanceof ExtensionApiError
+          ? { name: error.name, message: error.message, status: error.status, code: error.code }
+          : error instanceof Error
+            ? { name: error.name, message: error.message }
+            : { message: String(error) };
+      console.error('[constellation:portfolio] sync failed', { message, error: detail });
       setFeedback({ tone: 'error', message });
       if (isAuthenticationError(error)) {
         setConnection({ status: 'disconnected' });

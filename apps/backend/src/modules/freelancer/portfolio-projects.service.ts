@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { UniqueConstraintError } from 'sequelize';
 import {
@@ -104,6 +104,8 @@ function toView(row: PortfolioProject, profileUrlFallback?: string | null): Port
 
 @Injectable()
 export class PortfolioProjectsService {
+  private readonly logger = new Logger(PortfolioProjectsService.name);
+
   constructor(
     private readonly orgContext: OrgContextService,
     @InjectModel(FreelancerProfile) private readonly profileModel: typeof FreelancerProfile,
@@ -113,9 +115,21 @@ export class PortfolioProjectsService {
   async importProject(userId: string | undefined, dto: ImportPortfolioProjectDto) {
     const { orgId } = await this.orgContext.requireOrgIdForUser(userId);
     const profileUrl = normalizeUpworkFreelancerProfileUrl(dto.profileUrl);
-    const externalId = dto.externalId.trim();
-    const title = dto.title.trim();
+    const externalId = typeof dto.externalId === 'string' ? dto.externalId.trim() : '';
+    const title = typeof dto.title === 'string' ? dto.title.trim() : '';
+    this.logger.log(
+      `import start org=${orgId} externalId=${externalId || '(empty)'} ` +
+        `profileUrlRaw=${typeof dto.profileUrl === 'string' ? dto.profileUrl.slice(0, 120) : '(missing)'} ` +
+        `profileUrlNorm=${profileUrl ?? '(invalid)'} titleLen=${title.length} ` +
+        `tech=${Array.isArray(dto.technologies) ? dto.technologies.length : 0} ` +
+        `links=${Array.isArray(dto.links) ? dto.links.length : 0} ` +
+        `images=${Array.isArray(dto.imageUrls) ? dto.imageUrls.length : 0}`,
+    );
     if (!profileUrl || !externalId || !title) {
+      this.logger.warn(
+        `import invalid org=${orgId} hasProfileUrl=${Boolean(profileUrl)} ` +
+          `hasExternalId=${Boolean(externalId)} hasTitle=${Boolean(title)}`,
+      );
       throw codedBadRequest(API_ERROR_CODES.PORTFOLIO_PROJECT_IMPORT_INVALID);
     }
 
@@ -127,6 +141,14 @@ export class PortfolioProjectsService {
       (row) => normalizeUpworkFreelancerProfileUrl(row.profileUrl) === profileUrl,
     );
     if (!profile) {
+      const sampleUrls = profiles
+        .slice(0, 5)
+        .map((row) => normalizeUpworkFreelancerProfileUrl(row.profileUrl) ?? '(unnormalized)')
+        .join(', ');
+      this.logger.warn(
+        `import profile_required org=${orgId} wanted=${profileUrl} ` +
+          `orgProfileCount=${profiles.length} sample=[${sampleUrls}]`,
+      );
       throw codedNotFound(API_ERROR_CODES.PORTFOLIO_PROJECT_PROFILE_REQUIRED);
     }
 
@@ -168,6 +190,9 @@ export class PortfolioProjectsService {
         rawSnapshot: dto.rawSnapshot ?? existing.rawSnapshot,
       });
       await existing.reload({ attributes: [...PORTFOLIO_PROJECT_ATTRS] });
+      this.logger.log(
+        `import updated org=${orgId} profileId=${profile.id} projectId=${existing.id} externalId=${externalId}`,
+      );
       return { project: toView(existing, profileUrl), created: false };
     }
 
@@ -179,20 +204,37 @@ export class PortfolioProjectsService {
         rawSnapshot: dto.rawSnapshot ?? null,
       });
       await created.reload({ attributes: [...PORTFOLIO_PROJECT_ATTRS] });
+      this.logger.log(
+        `import created org=${orgId} profileId=${profile.id} projectId=${created.id} externalId=${externalId}`,
+      );
       return { project: toView(created, profileUrl), created: true };
     } catch (error) {
       // Concurrent sync hit unique (profile_id, external_id) — retry as update.
-      if (!(error instanceof UniqueConstraintError)) throw error;
+      if (!(error instanceof UniqueConstraintError)) {
+        this.logger.error(
+          `import create failed org=${orgId} profileId=${profile.id} externalId=${externalId}`,
+          error instanceof Error ? error.stack : undefined,
+        );
+        throw error;
+      }
       const raced = await this.portfolioModel.findOne({
         where: { freelancerProfileId: profile.id, externalId },
         attributes: [...PORTFOLIO_PROJECT_ATTRS],
       });
-      if (!raced) throw error;
+      if (!raced) {
+        this.logger.error(
+          `import unique race but row missing org=${orgId} profileId=${profile.id} externalId=${externalId}`,
+        );
+        throw error;
+      }
       await raced.update({
         ...payload,
         rawSnapshot: dto.rawSnapshot ?? raced.rawSnapshot,
       });
       await raced.reload({ attributes: [...PORTFOLIO_PROJECT_ATTRS] });
+      this.logger.log(
+        `import raced-update org=${orgId} profileId=${profile.id} projectId=${raced.id} externalId=${externalId}`,
+      );
       return { project: toView(raced, profileUrl), created: false };
     }
   }
