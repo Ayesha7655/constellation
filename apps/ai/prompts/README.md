@@ -6,19 +6,21 @@ Edit these files independently; the Nest AI service loads them at runtime via
 
 ## Layout
 
-| Path | Used by |
-|------|---------|
-| `upwork-filter/system.md` | `POST /v1/generate-filters` |
-| `upwork-filter/user.md` | same (template; `{{PROFILE_JSON}}`) |
-| `upwork-style-extract/system.md` | `POST /v1/extract-style-pack` |
-| `upwork-style-extract/user.md` | same (`{{EXAMPLES_JSON}}`) |
-| `upwork-proposal/system.md` | `POST /v1/generate-proposal` |
-| `upwork-proposal/user.md` | same (`{{STYLE_PACK_JSON}}`, `{{PROFILE_JSON}}`, `{{JOB_JSON}}`, `{{EXAMPLES_JSON}}`) |
+| Path                                   | Used by                                                                               |
+| -------------------------------------- | ------------------------------------------------------------------------------------- |
+| `upwork-filter/system.md`              | `POST /v1/generate-filters`                                                           |
+| `upwork-filter/user.md`                | same (template; `{{PROFILE_JSON}}`)                                                   |
+| `upwork-style-extract/system.md`       | `POST /v1/extract-style-pack`                                                         |
+| `upwork-style-extract/user.md`         | same (`{{EXAMPLES_JSON}}`)                                                            |
+| `upwork-proposal/system.md`            | `POST /v1/generate-proposal`                                                          |
+| `upwork-proposal/user.md`              | same (`{{STYLE_PACK_JSON}}`, `{{PROFILE_JSON}}`, `{{JOB_JSON}}`, `{{EXAMPLES_JSON}}`) |
+| `upwork-portfolio-relevance/system.md` | `POST /v1/find-relevant-portfolio`                                                    |
+| `upwork-portfolio-relevance/user.md`   | same (`{{JOB_JSON}}`, `{{PORTFOLIO_JSON}}`)                                           |
 
 ## Editing rules
 
 1. Keep **output contracts** aligned with Zod schemas under `src/modules/*/schemas/`.
-2. Always treat profile / job / example text as **untrusted data** (prompt-injection resistant).
+2. Always treat profile / job / example / portfolio text as **untrusted data** (prompt-injection resistant).
 3. Put non-negotiable rules near the **top and bottom** of system prompts (attention bias).
 4. Prefer precise, testable instructions over vague adjectives (“professional”, “engaging”).
 5. In development (`NODE_ENV` ≠ `production`), files are re-read on each request — no rebuild needed.

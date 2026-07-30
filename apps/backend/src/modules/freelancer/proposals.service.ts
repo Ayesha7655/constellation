@@ -52,10 +52,7 @@ import type { SaveProposalDraftDto } from './dto/save-proposal-draft.dto';
 import type { UpsertProposalStylePackDto } from './dto/upsert-proposal-style-pack.dto';
 import { OrgContextService } from './org-context.service';
 import { ProposalAttachmentUploadRegistry } from './proposal-attachment-upload-registry.service';
-import {
-  ensurePortfolioLinksInBody,
-  rankPortfolioProjects,
-} from './proposals/rank-portfolio-projects';
+import { combineProposalOutput, resolvePortfolioMatches } from './proposals/combine-proposal-output';
 import { rankProposalExamples, rankedExampleIds } from './proposals/rank-proposal-examples';
 
 const ALLOWED_MIME = new Set<string>(PROPOSAL_ATTACHMENT_ALLOWED_MIME_TYPES);
@@ -282,12 +279,7 @@ export class ProposalsService {
     return { example: this.toExampleView(created, attachments) };
   }
 
-  async updateExample(
-    userId: string | undefined,
-    profileId: string,
-    exampleId: string,
-    dto: UpdateProposalExampleDto,
-  ) {
+  async updateExample(userId: string | undefined, profileId: string, exampleId: string, dto: UpdateProposalExampleDto) {
     const { orgId } = await this.orgContext.requireOrgIdForUser(userId);
     await this.requireOwnedProfile(orgId, profileId);
     const example = await this.exampleModel.findOne({
@@ -366,6 +358,7 @@ export class ProposalsService {
       this.portfolioModel.findAll({
         where: { freelancerProfileId: profileId },
         attributes: [...PORTFOLIO_PROJECT_ATTRS],
+        limit: 50,
         order: [
           ['scraped_at', 'DESC'],
           ['created_at', 'DESC'],
@@ -377,50 +370,58 @@ export class ProposalsService {
     const jobText = `${job.title}\n${job.description}`;
     const selectedExamples = rankProposalExamples(jobText, job.skills ?? [], examples);
     const selectedIds = rankedExampleIds(jobText, job.skills ?? [], examples);
-    const { portfolio: selectedPortfolio, portfolioIds } = rankPortfolioProjects(
-      jobText,
-      job.skills ?? [],
-      portfolioRows.map((row) => ({
+    const jobInput = {
+      title: job.title,
+      description: job.description.slice(0, 12000),
+      skills: job.skills ?? [],
+      budget: job.budget,
+      jobType: job.jobType,
+      experienceLevel: job.experienceLevel,
+      clientLocation: job.clientLocation,
+    };
+    const portfolioCandidates = portfolioRows
+      .map((row) => ({
         id: row.id,
         title: row.title,
         role: row.role,
-        description: row.description,
-        technologies: Array.isArray(row.technologies) ? row.technologies : [],
-        projectUrl:
-          row.projectUrl ??
-          buildUpworkPortfolioProjectUrl(profile.profileUrl, row.externalId),
-        links: Array.isArray(row.links) ? row.links : [],
-      })),
-    );
+        description: row.description?.slice(0, 2000) ?? null,
+        technologies: Array.isArray(row.technologies) ? row.technologies.slice(0, 30) : [],
+        projectUrl: row.projectUrl ?? buildUpworkPortfolioProjectUrl(profile.profileUrl, row.externalId),
+        links: Array.isArray(row.links) ? row.links.slice(0, 10) : [],
+      }))
+      .filter(
+        (project) => Boolean(project.projectUrl?.trim()) || project.links.some((link) => Boolean(link.url.trim())),
+      );
 
-    const { body } = await this.aiServiceClient.generateProposal({
-      stylePack: preferences,
-      profile: {
-        title: profile.title,
-        overview: profile.overview,
-        skills: profile.skills ?? [],
-        hourlyRateMin: profile.hourlyRateMin,
-        hourlyRateMax: profile.hourlyRateMax,
-        country: profile.country,
-        languages: profile.languages ?? [],
-      },
-      job: {
-        title: job.title,
-        description: job.description.slice(0, 12000),
-        skills: job.skills ?? [],
-        budget: job.budget,
-        jobType: job.jobType,
-        experienceLevel: job.experienceLevel,
-        clientLocation: job.clientLocation,
-      },
-      examples: selectedExamples,
-      portfolio: selectedPortfolio,
-    });
+    const [proposalResult, portfolioResult] = await Promise.all([
+      this.aiServiceClient.generateProposal({
+        stylePack: preferences,
+        profile: {
+          title: profile.title,
+          overview: profile.overview,
+          skills: profile.skills ?? [],
+          hourlyRateMin: profile.hourlyRateMin,
+          hourlyRateMax: profile.hourlyRateMax,
+          country: profile.country,
+          languages: profile.languages ?? [],
+        },
+        job: jobInput,
+        examples: selectedExamples,
+      }),
+      portfolioCandidates.length > 0
+        ? this.aiServiceClient.findRelevantPortfolio({
+            job: jobInput,
+            portfolio: portfolioCandidates,
+          })
+        : Promise.resolve({ matches: [] }),
+    ]);
 
-    const trimmedBody = ensurePortfolioLinksInBody(body, selectedPortfolio)
-      .trim()
-      .slice(0, PROPOSAL_BODY_MAX_LENGTH);
-    const modelMeta = { exampleIds: selectedIds, portfolioIds };
+    const resolvedPortfolio = resolvePortfolioMatches(portfolioResult.matches, portfolioCandidates);
+    const trimmedBody = combineProposalOutput(proposalResult.body, resolvedPortfolio);
+    const modelMeta = {
+      exampleIds: selectedIds,
+      portfolioIds: resolvedPortfolio.map((match) => match.portfolioProjectId),
+    };
     const draftSource =
       source === ProposalDraftSource.EXTENSION_JOB_PAGE
         ? ProposalDraftSource.EXTENSION_JOB_PAGE
@@ -460,11 +461,7 @@ export class ProposalsService {
     return { draft: this.toDraftView(draft, attachments) };
   }
 
-  async generateDraftFromJobUrl(
-    userId: string | undefined,
-    profileId: string,
-    dto: GenerateProposalFromJobUrlDto,
-  ) {
+  async generateDraftFromJobUrl(userId: string | undefined, profileId: string, dto: GenerateProposalFromJobUrlDto) {
     const jobUrl = dto.jobUrl.trim();
     if (!isUpworkJobUrl(jobUrl)) {
       throw codedBadRequest(API_ERROR_CODES.PROPOSAL_INVALID_JOB_URL);
@@ -627,12 +624,7 @@ export class ProposalsService {
     return { ok: true as const };
   }
 
-  async attachToExample(
-    userId: string | undefined,
-    profileId: string,
-    exampleId: string,
-    storageKey: string,
-  ) {
+  async attachToExample(userId: string | undefined, profileId: string, exampleId: string, storageKey: string) {
     const authUserId = requireAuthUserId(userId);
     const { orgId } = await this.orgContext.requireOrgIdForUser(authUserId);
     await this.requireOwnedProfile(orgId, profileId);

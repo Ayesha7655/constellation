@@ -153,50 +153,6 @@ export class ProposalExampleDto {
   jobContext!: string | null;
 }
 
-export class ProposalPortfolioLinkDto {
-  @IsOptional()
-  @IsString()
-  @MaxLength(120)
-  label?: string;
-
-  @IsString()
-  @MaxLength(2000)
-  url!: string;
-}
-
-export class ProposalPortfolioProjectDto {
-  @IsString()
-  @MaxLength(300)
-  title!: string;
-
-  @IsOptional()
-  @IsString()
-  @MaxLength(200)
-  role!: string | null;
-
-  @IsOptional()
-  @IsString()
-  @MaxLength(2000)
-  description!: string | null;
-
-  @IsArray()
-  @IsString({ each: true })
-  @MaxLength(80, { each: true })
-  @ArrayMaxSize(30)
-  technologies!: string[];
-
-  @IsOptional()
-  @IsString()
-  @MaxLength(600)
-  projectUrl!: string | null;
-
-  @IsArray()
-  @ValidateNested({ each: true })
-  @Type(() => ProposalPortfolioLinkDto)
-  @ArrayMaxSize(10)
-  links!: ProposalPortfolioLinkDto[];
-}
-
 export class GenerateProposalDto {
   @ValidateNested()
   @Type(() => ProposalStylePackDto)
@@ -215,11 +171,4 @@ export class GenerateProposalDto {
   @Type(() => ProposalExampleDto)
   @ArrayMaxSize(8)
   examples!: ProposalExampleDto[];
-
-  @IsOptional()
-  @IsArray()
-  @ValidateNested({ each: true })
-  @Type(() => ProposalPortfolioProjectDto)
-  @ArrayMaxSize(5)
-  portfolio?: ProposalPortfolioProjectDto[];
 }

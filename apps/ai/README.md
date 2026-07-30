@@ -1,6 +1,7 @@
 # Constellation AI service
 
-Internal NestJS microservice for AI-backed Upwork helpers (filter generation, proposal generation, style extraction).
+Internal NestJS microservice for AI-backed Upwork helpers (filter generation, proposal writing, portfolio
+relevance, and style extraction).
 The backend is the only caller.
 
 ```bash
@@ -19,5 +20,15 @@ Providers load them at runtime (no rebuild needed in development). Optional over
 
 - `GET /health` — liveness (unauthenticated)
 - `POST /v1/generate-filters` — requires `x-internal-key`
-- `POST /v1/generate-proposal` — requires `x-internal-key`
+- `POST /v1/generate-proposal` — proposal writer; requires `x-internal-key`
+- `POST /v1/find-relevant-portfolio` — portfolio relevance finder; requires `x-internal-key`
 - `POST /v1/extract-style-pack` — requires `x-internal-key`; builds style preferences from example proposals
+
+## Agent workflows
+
+- [`proposal-generation`](./src/modules/proposal-generation/README.md) writes the proposal without portfolio context.
+- [`portfolio-relevance`](./src/modules/portfolio-relevance/README.md) selects relevant portfolio projects and
+  explains their mapping to the job.
+
+The backend runs both workflows concurrently and combines their outputs using trusted portfolio URLs from the
+database.

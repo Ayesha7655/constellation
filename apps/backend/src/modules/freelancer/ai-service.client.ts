@@ -2,9 +2,13 @@ import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import {
   API_ERROR_CODES,
+  PORTFOLIO_RELEVANCE_MAX_LENGTH,
+  PROPOSAL_PORTFOLIO_RETRIEVAL_K,
   normalizeUpworkApifyFilters,
   type ExtractStylePackRequest,
   type ExtractStylePackResponse,
+  type FindRelevantPortfolioRequest,
+  type FindRelevantPortfolioResponse,
   type GenerateProposalRequest,
   type GenerateProposalResponse,
   type GenerateUpworkFiltersRequest,
@@ -102,6 +106,62 @@ export class AiServiceClient {
       }
 
       return { body: data.body.trim() };
+    } catch {
+      codedBadRequest(API_ERROR_CODES.PROPOSAL_GENERATE_FAILED);
+    }
+  }
+
+  async findRelevantPortfolio(body: FindRelevantPortfolioRequest): Promise<FindRelevantPortfolioResponse> {
+    const { baseUrl, internalKey, timeoutMs } = this.resolveConfig();
+    if (!baseUrl || !internalKey) {
+      codedBadRequest(API_ERROR_CODES.PROPOSAL_GENERATE_FAILED);
+    }
+
+    try {
+      const response = await fetch(`${baseUrl}/v1/find-relevant-portfolio`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-internal-key': internalKey,
+        },
+        body: JSON.stringify(body),
+        signal: AbortSignal.timeout(timeoutMs),
+      });
+
+      if (!response.ok) {
+        codedBadRequest(API_ERROR_CODES.PROPOSAL_GENERATE_FAILED);
+      }
+
+      const data: unknown = await response.json();
+      if (!isObjectRecord(data) || !Array.isArray(data.matches)) {
+        codedBadRequest(API_ERROR_CODES.PROPOSAL_GENERATE_FAILED);
+      }
+      if (data.matches.length > PROPOSAL_PORTFOLIO_RETRIEVAL_K) {
+        codedBadRequest(API_ERROR_CODES.PROPOSAL_GENERATE_FAILED);
+      }
+
+      const matches = data.matches.map((value) => {
+        if (!isObjectRecord(value)) {
+          codedBadRequest(API_ERROR_CODES.PROPOSAL_GENERATE_FAILED);
+        }
+        const portfolioProjectId = value.portfolioProjectId;
+        const relevance = value.relevance;
+        if (
+          typeof portfolioProjectId !== 'string' ||
+          !portfolioProjectId.trim() ||
+          typeof relevance !== 'string' ||
+          !relevance.trim() ||
+          relevance.trim().length > PORTFOLIO_RELEVANCE_MAX_LENGTH
+        ) {
+          codedBadRequest(API_ERROR_CODES.PROPOSAL_GENERATE_FAILED);
+        }
+        return {
+          portfolioProjectId: portfolioProjectId.trim(),
+          relevance: relevance.trim(),
+        };
+      });
+
+      return { matches };
     } catch {
       codedBadRequest(API_ERROR_CODES.PROPOSAL_GENERATE_FAILED);
     }

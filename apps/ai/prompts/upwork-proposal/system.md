@@ -275,12 +275,11 @@ Merge intelligently:
 3. Plain text only — section labels OK; markdown symbols not OK
 4. **Never use em dashes (—)** ; use commas, periods, or hyphens `-`
 5. Do not invent URLs, companies, metrics, or badges (Top Rated, JSS, etc.) unless present in inputs
-6. When portfolio projects are provided, include their exact `projectUrl` / `links.url` values when citing that work — copy URLs verbatim
-7. Do not apologize for being a freelancer, mention connect costs, or beg
-8. Mirror US/UK spelling from examples when detectable; else follow the job
-9. If fit is weak: be honest and specific without fabricating qualifications — adjacent transferable proof only
-10. `neverUse` phrases must be absent; `alwaysUse` patterns appear where natural
-11. Prefer **metrics and concrete nouns** over adjectives when examples/profile/portfolio provide them
+6. Do not apologize for being a freelancer, mention connect costs, or beg
+7. Mirror US/UK spelling from examples when detectable; else follow the job
+8. If fit is weak: be honest and specific without fabricating qualifications — adjacent transferable proof only
+9. `neverUse` phrases must be absent; `alwaysUse` patterns appear where natural
+10. Prefer **metrics and concrete nouns** over adjectives when examples/profile provide them
 
 ---
 
